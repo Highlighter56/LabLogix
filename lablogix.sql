@@ -1,21 +1,23 @@
 -- show databases;
--- run this file first
+-- run this file first to create database, and so on
 create database labLogix;
 use labLogix;
 show tables;
 show databases;
 
+
+-- creating the tables
 create table if not exists users(
 userID int auto_increment primary key, 
 name varchar(100), 
 email varchar(100), 
 password varchar(300), 
 userType enum('student', 'faculty', 'administrator'));
-describe users;
 
 create table if not exists room260(
 room260ID int auto_increment primary key, 
-sessionlogged DateTIME default current_timestamp, 
+sessionlogin DateTIME default current_timestamp, 
+sessionlogout DateTIME NULL,
 userID int, 
 status enum('open', 'closed', 'full'), 
 capacity int, 
@@ -23,7 +25,8 @@ currentOccupancy int);
 
 create table if not exists room259 (
 room259ID int auto_increment primary key, 
-sessionlogged DateTIME default current_timestamp, 
+sessionlogin DateTIME default current_timestamp, 
+sessionlogout DateTIME NULL,
 userID int, 
 status enum('open', 'closed', 'full'), 
 capacity int, 
@@ -46,7 +49,7 @@ status enum('available', 'in_use', 'offline'),
 room260ID int not NULL);
 
 show tables;
-
+describe users;
 -- foreign keys run down here
 alter table room260
 	add constraint fk_room260_user 
@@ -68,15 +71,19 @@ alter table pc
 			(room260ID is not NULL and room259ID is NULL) or
 			(room260ID is NULL and room259ID is not NULL)
 		);
+	
+    describe pc;
 
 alter table printer
 	add constraint fk_printer_room259
     foreign key (room259ID) references room259(room259ID);
+    
     describe printer;
 
 alter table printer3d
 	add constraint fk_printer3d_room260 
     foreign key (room260ID) references room260(room260ID);
+    
     describe printer3d;
 
 show tables;
