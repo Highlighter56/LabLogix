@@ -1,7 +1,8 @@
 // This is an import statment that allows all the strategy pattern stuff to be contained in a seperate folder, but you can still access Device
+import java.sql.*;
+
 import stratPattern.Device;
 
-// ?? Our UML says OccupancyTracker should extend LabRoom, I think this should be the other way around
 public class LabRoom {
 	
 	// ---Attributes---
@@ -46,11 +47,13 @@ public class LabRoom {
 
 	// ---Methods---
 	// ?? What does this method do? Does it show a list of devices? Does it add a device to the LabRoom? Something else?
-	public void device() {
+	// !! Return a list of all device ids that are associated with the room
+	public Device[] devices(String db_url, String db_user, String db_password) {
 
 	}
 	// ?? Should this return a list of device IDs? Should this return the num of free devices? | If this just returns a num, should there be a way to speify what device you wanna know if its free?
-	public Device[] availablDevices() {
+	// !! List of device ids
+	public Device[] availablDevices(String db_url, String db_user, String db_password) {
 		return new Device[5];
 		// Pull the list of computers for this LabRoom
 		// Then from this list count how many are in use
@@ -59,3 +62,5 @@ public class LabRoom {
 
 	
 }
+// printer only in 259
+// printer3d only in 260

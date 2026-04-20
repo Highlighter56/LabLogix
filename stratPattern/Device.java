@@ -45,7 +45,7 @@ public class Device {
 	}
 	// returns the status of the current device
 	public boolean getStatus() {
-		return statusStrategy.statusStrategy();
+		return statusStrategy.statusStrategy(this.id);
 	}
 	
 	// ---Getters---
