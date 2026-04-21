@@ -46,6 +46,8 @@ public class LabRoom {
 
 	// ---Methods---
 	// ?? Without fake data in the database, I cant test this
+	// ?? How/can we insert fake data into the database
+	// ?? You know how you sent the updated files? Can you help me merge the two so I have one file?
 
 	// Returns a list of devices in the given room
 	public int[] devices(String db_url, String db_user, String db_password) {
