@@ -1,4 +1,4 @@
-package stratPattern;
+
 
 public class Device {
 

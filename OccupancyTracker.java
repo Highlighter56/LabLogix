@@ -1,5 +1,4 @@
 import java.util.Date;
-import stratPattern.Device;
 import java.sql.*;
 
 // ?? Even though the database says OccupancyTracker should be a child/have a relationship to LabRoom, Im going to treat them completly seperatly cause I think it makes more sense ?..
@@ -72,16 +71,16 @@ public class OccupancyTracker {
 			// Modify the Device Table : Status of the Device
 			Device.types type = device.getType();
 			// Based on the type of device, go into that table, then modify (based on device id) that row/device's status to false/now in use
-			String varName="";
+			String fieldName="";
 			switch (type) {
 				case Device.types.COMPUTER:
-					varName = "pcID";
+					fieldName = "pcID";
 					break;
 				case Device.types.PRINTER:
-					varName = "printerID";
+					fieldName = "printerID";
 					break;
 				case Device.types.PRINTER3D:
-					varName = "printer3dID";
+					fieldName = "printer3dID";
 					break;
 				default:
 					strSelect = "";
@@ -90,8 +89,11 @@ public class OccupancyTracker {
 					System.exit(0);
 					break;
 			}
+
+			// !!! For enums in mysql, use single quotes
+
 			// ?? How do you change something in the database? Like Im not trying to add a row or pull it, I need to modify an existing row. What does a querry that does that look like?...
-			strSelect = "somethign"+varName+"somethign more"; // Have this be the statment 
+			strSelect = "somethign"+fieldName+"somethign more"; // Have this be the statment 
 			rset = stmt.executeQuery(strSelect);
 
 			// Get RoomID from Device
