@@ -1,4 +1,4 @@
-
+import java.sql.*;
 
 public class Device {
 
@@ -24,6 +24,42 @@ public class Device {
 		this.type = type;
 		this.status = true;
 		setStatusStrategy();
+	}
+	public Device DeviceFromDb(int id, types type) {
+		boolean status=false;
+		try {
+			// Form Connection
+			Statement stmt = FormConnection.connect();
+
+			// Update Device Status
+			String tableName = "";
+			String idName = "";
+
+			switch (type) {
+				case COMPUTER:
+					tableName = "pc";
+					idName = "pcID";
+					break;
+				case PRINTER:
+					tableName = "printer";
+					idName = "printerID";
+					break;
+				case PRINTER3D:
+					tableName = "printer3d";
+					idName = "printer3dID";
+					break;
+			}
+			String strSelect = "select status from "+tableName+" where "+idName+"="+id;
+			ResultSet rset = stmt.executeQuery(strSelect);
+			if (rset.next()) {
+				status = rset.getString("status").equals("available");
+			}
+			return new Device(id, type, status);
+		} catch (Exception e) {
+			System.out.print(e);
+			return new Device(id, type);
+		}
+
 	}
 	
 	// ---Strategy Pattern---
