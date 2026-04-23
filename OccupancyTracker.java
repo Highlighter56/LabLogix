@@ -1,14 +1,15 @@
 import java.util.Date;
 import java.sql.*;
 
-// ?? Even though the database says OccupancyTracker should be a child/have a relationship to LabRoom, Im going to treat them completly seperatly cause I think it makes more sense ?..
+import Test.TempUserAccount;
+
 public class OccupancyTracker { 
 	
 	// ---Attributes---
 	private Date timeStamp;
-	private String action; 				// ?? What is this for? In my head, its login or logout. But the database has nothing that talks about action.
-	private TempUserAccount person;		// This only says temp becuase I didnt want to make an entire UserAccount or commit a UserAccount and then override something
-										// Eventualy make this UserAccount
+	private String action; 				
+	private TempUserAccount person;		// Eventualy make this UserAccount
+										
 	// ---Constructors---
 	public OccupancyTracker(Date timeStamp, String action, TempUserAccount person) {
 		this.timeStamp = timeStamp;
@@ -39,11 +40,7 @@ public class OccupancyTracker {
 	}
 
 	// ---Methods---
-	// ** DEF does not work
-	// ?? What is the differnce between my OccupancyTracker recordLogin() and UserAccount login()
-	// *** login() and logout() should check the current state, to validate if someone can login/out. If they can, then call this method and store it.
 	/*
-	Sends login data to the database. 
 	Data Recorded: 
 	- userID
 	- timeStamp
@@ -52,22 +49,15 @@ public class OccupancyTracker {
 	 - what room (technicaly not needed cause devices have there own room id, but I feel like it makes sense to have it directly)
 	Where in the database would this get stored? 
 	 */
-	// ?? Its kind of annoyign to pass the three db parameters everytime, is there a way around this
-	public void recordLogin(String db_url, String db_user, String db_password, TempUserAccount user, Date timeStamp, String action, Device device) {
+	public void recordLogin(TempUserAccount user, Date timeStamp, String action, Device device) {
 		Connection conn;
 		Statement stmt;
 		String strSelect;
 		ResultSet rset;
 		try {
 			// Form Connection
-			conn = DriverManager.getConnection(db_url, db_user, db_password);
-			stmt = conn.createStatement();
-
-			/*
-			The only tables that seem to need to be modified would be
-			the room tables, and the device tables. Both can be accessed
-			through the Device object passed.
-			 */
+			stmt = FormConnection.connect();
+			
 			// Modify the Device Table : Status of the Device
 			Device.types type = device.getType();
 			// Based on the type of device, go into that table, then modify (based on device id) that row/device's status to false/now in use
@@ -84,8 +74,6 @@ public class OccupancyTracker {
 					break;
 				default:
 					strSelect = "";
-					System.out.println("Something went wrong...");
-					// It shouldnt be possible for a device to not have a type
 					System.exit(0);
 					break;
 			}

@@ -12,7 +12,6 @@ public class LabRoom {
 
 	// ---Constructors---
 	public LabRoom(int id, int capacity, int currentOccupancy) {
-
 		this.id = id;
 		this.capacity = capacity;
 		this.currentOccupancy = currentOccupancy;
@@ -45,22 +44,18 @@ public class LabRoom {
 	}
 
 	// ---Methods---
-	// ?? Without fake data in the database, I cant test this
-	// ?? How/can we insert fake data into the database
-	// ?? You know how you sent the updated files? Can you help me merge the two so I have one file?
-
 	// Returns a list of devices in the given room
-	public int[] devices(String db_url, String db_user, String db_password) {
-		return devicesHelper(db_url, db_user, db_password, false);
+	public int[] devices() {
+		return devicesHelper(false);
 	}
 
 	// Returns a list of available devices in a given room
-	public int[] availablDevices(String db_url, String db_user, String db_password) {
-		return devicesHelper(db_url, db_user, db_password, true);
+	public int[] availablDevices() {
+		return devicesHelper(true);
 	}
 	
 	// When want available = true, return only available devices. Else return all devices
-	public int[] devicesHelper(String db_url, String db_user, String db_password, boolean wantAvailable) {
+	private int[] devicesHelper(boolean wantAvailable) {
 		String onlyAvailable = "";
 		if(wantAvailable)
 			onlyAvailable = "where status = \"available\"";
@@ -69,13 +64,10 @@ public class LabRoom {
 		int[] devices = new int[count];
 		try {
 			// Form Connection
-			Connection conn = DriverManager.getConnection(db_url, db_user, db_password);
-			Statement stmt = conn.createStatement();
+			Statement stmt = FormConnection.connect();
 			
 			// Get Device Count
 			// PCs
-			// ??? The PC Table is confusing, how do I pull data from just one room?
-			// ?? Why are there different tables for each room
 			String strSelect = "select count(*) from pc"+onlyAvailable;
 			ResultSet rset = stmt.executeQuery(strSelect);
 			rset.next();
