@@ -1,101 +1,237 @@
-import java.util.Date;
 import java.sql.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-import Test.TempUserAccount;
+// Only here becaseu Im not making the UserAccount class
+import Test.UserAccount;
 
 public class OccupancyTracker { 
 	
 	// ---Attributes---
-	private Date timeStamp;
-	private String action; 				
-	private TempUserAccount person;		// Eventualy make this UserAccount
+	private String timeStamp;
+	public enum actions {LOGIN, LOGOUT}
+	private actions action;
+	private UserAccount person;
 										
 	// ---Constructors---
-	public OccupancyTracker(Date timeStamp, String action, TempUserAccount person) {
-		this.timeStamp = timeStamp;
+	public OccupancyTracker(actions action, UserAccount person) {
+		this.timeStamp = currentDateTime();
 		this.action = action;
 		this.person = person;
 	}
 
 	// ---Getters---
-	public Date getTimeStamp() {
+	public String getTimeStamp() {
 		return timeStamp;
 	}
-	public String getAction() {
+	public actions getAction() {
 		return action;
 	}
-	public TempUserAccount getPerson() {
+	public UserAccount getPerson() {
 		return person;
 	}
 
 	// ---Setters---
-	public void setTimeStamp(Date timeStamp) {
+	public void setTimeStamp(String timeStamp) {
 		this.timeStamp = timeStamp;
 	}
-	public void setAction(String action) {
+	public void setAction(actions action) {
 		this.action = action;
 	}
-	public void setPerson(TempUserAccount person) {
+	public void setPerson(UserAccount person) {
 		this.person = person;
 	}
 
 	// ---Methods---
-	/*
-	Data Recorded: 
-	- userID
-	- timeStamp
-	 - action (login or logout ??)
-	 - on what device
-	 - what room (technicaly not needed cause devices have there own room id, but I feel like it makes sense to have it directly)
-	Where in the database would this get stored? 
-	 */
-	public void recordLogin(TempUserAccount user, Date timeStamp, String action, Device device) {
-		Connection conn;
+	// Get, and format to match databse, current date and time
+	public String currentDateTime() {
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		return now.format(formatter); // ex: 2026-04-23 16:06:33
+	}
+
+	// Record Login
+	public void recordLogin(UserAccount user, Device device) {
 		Statement stmt;
-		String strSelect;
-		ResultSet rset;
+		ResultSet rs;
+
 		try {
-			// Form Connection
-			stmt = FormConnection.connect();
-			
-			// Modify the Device Table : Status of the Device
-			Device.types type = device.getType();
-			// Based on the type of device, go into that table, then modify (based on device id) that row/device's status to false/now in use
-			String fieldName="";
-			switch (type) {
-				case Device.types.COMPUTER:
-					fieldName = "pcID";
+			stmt = FormConnection.connect(); 
+
+			// Update Device Status
+			String tableName = "";
+			String idField = "";
+
+			switch (device.getType()) {
+				case COMPUTER:
+					tableName = "pc";
+					idField = "pcID";
 					break;
-				case Device.types.PRINTER:
-					fieldName = "printerID";
+				case PRINTER:
+					tableName = "printer";
+					idField = "printerID";
 					break;
-				case Device.types.PRINTER3D:
-					fieldName = "printer3dID";
-					break;
-				default:
-					strSelect = "";
-					System.exit(0);
+				case PRINTER3D:
+					tableName = "printer3d";
+					idField = "printer3dID";
 					break;
 			}
 
-			// !!! For enums in mysql, use single quotes
+			String updateDeviceSQL = "UPDATE " + tableName +
+					" SET status = 'in_use' WHERE " + idField + " = " + device.getId();
+			stmt.executeUpdate(updateDeviceSQL);
 
-			// ?? How do you change something in the database? Like Im not trying to add a row or pull it, I need to modify an existing row. What does a querry that does that look like?...
-			strSelect = "somethign"+fieldName+"somethign more"; // Have this be the statment 
-			rset = stmt.executeQuery(strSelect);
+			// Determine Room
+			String roomTable = "";
+			int roomID = -1;
 
-			// Get RoomID from Device
+			if (device.getType() == Device.types.COMPUTER) {
+				String sql = "SELECT room259ID, room260ID FROM pc WHERE pcID = " + device.getId();
+				rs = stmt.executeQuery(sql);
 
-			// in that table, set all values
+				if (rs.next()) {
+					if (rs.getObject("room259ID") != null) {
+						roomTable = "room259";
+						roomID = rs.getInt("room259ID");
+					} else {
+						roomTable = "room260";
+						roomID = rs.getInt("room260ID");
+					}
+				}
+
+			} else if (device.getType() == Device.types.PRINTER) {
+				String sql = "SELECT room259ID FROM printer WHERE printerID = " + device.getId();
+				rs = stmt.executeQuery(sql);
+
+				if (rs.next()) {
+					roomTable = "room259";
+					roomID = rs.getInt("room259ID");
+				}
+
+			} else if (device.getType() == Device.types.PRINTER3D) {
+				String sql = "SELECT room260ID FROM printer3d WHERE printer3dID = " + device.getId();
+				rs = stmt.executeQuery(sql);
+
+				if (rs.next()) {
+					roomTable = "room260";
+					roomID = rs.getInt("room260ID");
+				}
+			}
+
+			// Get userID
+			int userID = -1;
+
+			String userSQL = "SELECT userID FROM users WHERE email = '" + user.getEmail() + "'";
+			rs = stmt.executeQuery(userSQL);
+
+			if (rs.next()) {
+				userID = rs.getInt("userID");
+			} else {
+				throw new Exception("User not found");
+			}
+
+			// Get Current Occupancy
+			int currentOccupancy = 0;
+
+			String occSQL = "SELECT currentOccupancy FROM " + roomTable +
+					" ORDER BY " + roomTable + "ID DESC LIMIT 1";
+
+			rs = stmt.executeQuery(occSQL);
+
+			if (rs.next()) {
+				currentOccupancy = rs.getInt("currentOccupancy");
+			}
+
+			int newOccupancy = currentOccupancy + 1;
+
+			// Insert New Session Row
+			int capacity = roomTable.equals("room259") ? 25 : 30;
+
+			String insertSQL = "INSERT INTO " + roomTable +
+					" (sessionlogin, sessionlogout, userID, status, capacity, currentOccupancy) VALUES (" +
+					"NOW(), NULL, " + userID + ", 'open', " + capacity + ", " + newOccupancy + ")";
+
+			stmt.executeUpdate(insertSQL);
+
+			// System.out.println("Recorded Login");
 
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
-
 	}
-	// ** Prob have a helper method sense this is so close to login, except with one check prior and action of logout instead of login
-	public void recordLogout(TempUserAccount user, Date timeStamp, String action, Device device) {
 
+	// Record Logout
+	public void recordLogout(UserAccount user, Device device) {
+		Statement stmt;
+		ResultSet rs;
+
+		try {
+			stmt = FormConnection.connect();
+
+			// Get userID
+			int userID = -1;
+
+			String userSQL = "SELECT userID FROM users WHERE email = '" + user.getEmail() + "'";
+			rs = stmt.executeQuery(userSQL);
+
+			if (rs.next()) {
+				userID = rs.getInt("userID");
+			} else {
+				throw new Exception("User not found");
+			}
+
+			// Update Room Table
+			String update260 = "UPDATE room260 " +
+					"SET sessionlogout = NOW(), " +
+					"currentOccupancy = GREATEST(currentOccupancy - 1, 0) " +
+					"WHERE userID = " + userID + " AND sessionlogout IS NULL";
+
+			int rowsAffected260 = stmt.executeUpdate(update260);
+
+			int rowsAffected259 = 0;
+
+			if (rowsAffected260 == 0) {
+				String update259 = "UPDATE room259 " +
+						"SET sessionlogout = NOW(), " +
+						"currentOccupancy = GREATEST(currentOccupancy - 1, 0) " +
+						"WHERE userID = " + userID + " AND sessionlogout IS NULL";
+
+				rowsAffected259 = stmt.executeUpdate(update259);
+			}
+
+			// Update Device Status
+			String tableName = "";
+			String idField = "";
+
+			switch (device.getType()) {
+				case COMPUTER:
+					tableName = "pc";
+					idField = "pcID";
+					break;
+				case PRINTER:
+					tableName = "printer";
+					idField = "printerID";
+					break;
+				case PRINTER3D:
+					tableName = "printer3d";
+					idField = "printer3dID";
+					break;
+			}
+
+			String updateDeviceSQL = "UPDATE " + tableName +
+					" SET status = 'available' WHERE " + idField + " = " + device.getId();
+
+			stmt.executeUpdate(updateDeviceSQL);
+
+			if (rowsAffected260 > 0 || rowsAffected259 > 0) {
+				System.out.println("Recorded Logout");
+			} else {
+				System.out.println("No session to log out of");
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }
