@@ -1,6 +1,15 @@
 # Instructions for Running the server
 
-If it doesn't work, close VS code and reopen
+You will need to create .env 
+If it doesn't work, close VS code and reopen.
+
+## 0. Create a .env file
+In the website folder, create a ".env" file. In the file, paste this. This file will not be copied over to github, so your password will not be shared
+
+    DB_HOST=localhost
+    DB_USER=root
+    DB_PASSWORD=PASSWORD (substitute PASSWORD for your MySQL PAssword)
+    DB_NAME=labLogix
 
 ## 1. navigate into the project folder (Lablogix, but if you're running it from VS code terminal, this step is unecessary)
 
