@@ -39,7 +39,7 @@
             </div>
 
             <!--Displays the current occupancy of room259-->
-            <div id="room259-occupancy"></div>
+            <div id="room259-occupancy">
                 <script>
                     async function occupancyRoom259() {
                         const response = await fetch('/api/room259');
@@ -56,6 +56,7 @@
             </div>
 
             <!--Displays which and how many devices are in use in room259-->
+            <h3>Devices in use:</h3>
             <ul id="room259-devices"></ul>
             <script>
                 async function pcRoom259(){
