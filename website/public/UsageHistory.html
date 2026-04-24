@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UsageHistory</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="login-page">
+
+    <h1>LabLogix</h1>
+
+    <div class="form-box">
+        <form id="loginForm">
+            <div class="buttons">
+                <button type="button" onclick="window.location.href='/room260'">Room 260</button>
+                <button type="button" onclick="window.location.href='/room259'">Room 259</button>
+            </div>
+
+            <h2>Login</h2>
+
+            <div class="input-wrapper">
+                <i class="fa-regular fa-user"></i>
+                <input type="text" id="username" name="username" placeholder="Username" required><br>
+            </div>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="pwd" name="pwd" placeholder="Password" required>
+            </div>
+            <br>
+            <input type="submit" value="Login">
+        </form>
+    </div>
+</body>
+</html>

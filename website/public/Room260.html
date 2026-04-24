@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LabLogix</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+</head>
+<body class="room260">
+
+    <h1>LabLogix</h1>
+    
+    <div class="form-box">
+
+        <form>
+            <div class="buttons">
+                <button type="button" onclick="window.location.href='/room260'">Room 260</button>
+                <button type="button" onclick="window.location.href='/room259'">Room 259</button>
+                <button type="button" onclick="window.location.href='/usagehistory'">Usage History</button>
+            </div>
+
+            <h2>Room260</h2>
+
+            <!--Displays the status of room260-->
+            <div id="room260-status">
+                <script>
+                    async function statusRoom260(){
+                        const response = await fetch('/api/room260');
+                        const data = await response.json();
+
+                        const container = document.getElementById('room260-status');
+
+                        data.forEach(room => {
+                            container.innerText = `Room Status: ${room.status}`;
+                        });
+                    }
+                    statusRoom260();
+                </script>
+            </div>
+
+            <!--Displays current occupancy of room260-->
+            <div id="room260-occupancy">
+                <script>
+                    async function occupancyRoom260() {
+                        const response = await fetch('/api/room260');
+                        const data = await response.json();
+
+                        const container = document.getElementById('room260-occupancy');
+
+                        data.forEach(room => {
+                            container.innerText = `Occupancy: ${room.currentOccupancy} / ${room.capacity}`;
+                        });
+                    }
+                    occupancyRoom260();
+                </script>
+            </div>
+
+            <!--Displays which and how many devices are in use in room260-->
+            <ul id="room260-devices"></ul>
+            <script>
+                async function pcRoom260(){
+                    const response = await fetch('/api/pc');
+                    const data = await response.json();
+
+                    const container = document.getElementById('room260-devices');
+
+                    data.forEach(pc => {
+                        const li = document.createElement('li');
+                        li.textContent = `PC: ${pc.status}`;
+                        container.appendChild(li);
+                    });
+                }
+                pcRoom260();
+
+                async function printer3dRoom260() {
+                    const response = await fetch('/api/printer3d');
+                    const data = await response.json();
+
+                    const container = document.getElementById('room260-devices');
+
+                    data.forEach(printer3d => {
+                        const li = document.createElement('li');
+                        li.textContent = `3D-Printer: ${printer3d.status}`;
+                        container.appendChild(li);
+                    });
+                }
+                printer3dRoom260();
+            </script>
+
+            <!--Displays peak & least usage time as a chart-->
+           <canvas id="usageTimeChart"></canvas>
+
+           <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+           <script>
+                async function usageTime260() {
+                    const response = await fetch('/api/room260');
+                    const data = await response.json();
+
+                    const hours = data.map(row => `${row.hour}:00`);
+                    const sessions = data.map(row => row.sessions);
+
+                    const ctx = document.getElementById('usageTimeChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: hours,
+                            datasets: [{
+                                label: 'Sessions per Hour',
+                                data: sessions,
+                                backgroundColor: sessions.map(s =>
+                                    s > 20 ? '#ef4444' :  // busy: red
+                                    s > 10 ? '#f97316' :  // moderate: orange
+                                    '#22c55e'             // quit: green
+                                ),
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: (context) => {
+                                            const val = context.raw;
+                                            const label = val > 20 ? 'Very Busy' : val > 10 ? 'Moderate' : 'Quiet';
+                                            return `${val} sessions - ${label}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                            y: {beginAtZero: true}
+                            }
+                        }
+                    });
+                }
+                usageTime260();
+           </script>
+        </form>
+    </div>
+
+</body>
+</html>
