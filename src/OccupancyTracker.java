@@ -1,9 +1,11 @@
+package src;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 // Only here becaseu Im not making the UserAccount class
 import Test.UserAccount;
+import src.devices.Device;
 
 public class OccupancyTracker { 
 	

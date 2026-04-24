@@ -1,3 +1,4 @@
+package src;
 import java.sql.*;
 // Allows stratPattern to stay seperate
 // import stratPattern.Device;

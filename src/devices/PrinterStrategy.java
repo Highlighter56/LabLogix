@@ -1,12 +1,17 @@
+package src.devices;
 import java.sql.*;
 
-public class Printer3DStrategy implements StatusStrategy{
+import src.FormConnection;
+
+// import FormConnection;
+
+public class PrinterStrategy implements StatusStrategy{
 	public boolean statusStrategy(int id) {
 		boolean status = false;
 		try {
 			Statement stmt = FormConnection.connect();
 
-			String strSelect = "select status from printer3d where printeredID = "+id;
+			String strSelect = "select status from printer where printerID = "+id;
 			ResultSet rset = stmt.executeQuery(strSelect);
 			rset.next();
 			status = rset.getString("status").equals("available");

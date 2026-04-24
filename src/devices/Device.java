@@ -1,4 +1,7 @@
+package src.devices;
 import java.sql.*;
+
+import src.FormConnection;
 
 public class Device {
 
