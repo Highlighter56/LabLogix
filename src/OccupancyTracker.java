@@ -54,11 +54,7 @@ public class OccupancyTracker {
 
 	// Record Login
 	public void recordLogin(UserAccount user, Device device) {
-		Statement stmt;
-		ResultSet rs;
-
-		try {
-			stmt = FormConnection.connect(); 
+		try (Statement stmt = FormConnection.connect()) {
 
 			// Update Device Status
 			String tableName = "";
@@ -85,51 +81,52 @@ public class OccupancyTracker {
 
 			// Determine Room
 			String roomTable = "";
-			int roomID = -1;
 
 			if (device.getType() == Device.types.COMPUTER) {
 				String sql = "SELECT room259ID, room260ID FROM pc WHERE pcID = " + device.getId();
-				rs = stmt.executeQuery(sql);
-
-				if (rs.next()) {
-					if (rs.getObject("room259ID") != null) {
-						roomTable = "room259";
-						roomID = rs.getInt("room259ID");
-					} else {
-						roomTable = "room260";
-						roomID = rs.getInt("room260ID");
+				try (ResultSet rs = stmt.executeQuery(sql)) {
+					if (rs.next()) {
+						if (rs.getObject("room259ID") != null) {
+							roomTable = "room259";
+						} else {
+							roomTable = "room260";
+						}
 					}
 				}
 
 			} else if (device.getType() == Device.types.PRINTER) {
 				String sql = "SELECT room259ID FROM printer WHERE printerID = " + device.getId();
-				rs = stmt.executeQuery(sql);
-
-				if (rs.next()) {
-					roomTable = "room259";
-					roomID = rs.getInt("room259ID");
+				try (ResultSet rs = stmt.executeQuery(sql)) {
+					if (rs.next()) {
+						roomTable = "room259";
+					}
 				}
 
 			} else if (device.getType() == Device.types.PRINTER3D) {
 				String sql = "SELECT room260ID FROM printer3d WHERE printer3dID = " + device.getId();
-				rs = stmt.executeQuery(sql);
-
-				if (rs.next()) {
-					roomTable = "room260";
-					roomID = rs.getInt("room260ID");
+				try (ResultSet rs = stmt.executeQuery(sql)) {
+					if (rs.next()) {
+						roomTable = "room260";
+					}
 				}
+			}
+
+			if (roomTable.isEmpty()) {
+				throw new Exception("Device is not assigned to a room");
 			}
 
 			// Get userID
 			int userID = -1;
-
-			String userSQL = "SELECT userID FROM users WHERE email = '" + user.getEmail() + "'";
-			rs = stmt.executeQuery(userSQL);
-
-			if (rs.next()) {
-				userID = rs.getInt("userID");
-			} else {
-				throw new Exception("User not found");
+			String userSQL = "SELECT userID FROM users WHERE email = ?";
+			try (PreparedStatement userStmt = stmt.getConnection().prepareStatement(userSQL)) {
+				userStmt.setString(1, user.getEmail());
+				try (ResultSet rs = userStmt.executeQuery()) {
+					if (rs.next()) {
+						userID = rs.getInt("userID");
+					} else {
+						throw new Exception("User not found");
+					}
+				}
 			}
 
 			// Get Current Occupancy
@@ -137,11 +134,10 @@ public class OccupancyTracker {
 
 			String occSQL = "SELECT currentOccupancy FROM " + roomTable +
 					" ORDER BY " + roomTable + "ID DESC LIMIT 1";
-
-			rs = stmt.executeQuery(occSQL);
-
-			if (rs.next()) {
-				currentOccupancy = rs.getInt("currentOccupancy");
+			try (ResultSet rs = stmt.executeQuery(occSQL)) {
+				if (rs.next()) {
+					currentOccupancy = rs.getInt("currentOccupancy");
+				}
 			}
 
 			int newOccupancy = currentOccupancy + 1;
@@ -164,22 +160,20 @@ public class OccupancyTracker {
 
 	// Record Logout
 	public void recordLogout(UserAccount user, Device device) {
-		Statement stmt;
-		ResultSet rs;
-
-		try {
-			stmt = FormConnection.connect();
+		try (Statement stmt = FormConnection.connect()) {
 
 			// Get userID
 			int userID = -1;
-
-			String userSQL = "SELECT userID FROM users WHERE email = '" + user.getEmail() + "'";
-			rs = stmt.executeQuery(userSQL);
-
-			if (rs.next()) {
-				userID = rs.getInt("userID");
-			} else {
-				throw new Exception("User not found");
+			String userSQL = "SELECT userID FROM users WHERE email = ?";
+			try (PreparedStatement userStmt = stmt.getConnection().prepareStatement(userSQL)) {
+				userStmt.setString(1, user.getEmail());
+				try (ResultSet rs = userStmt.executeQuery()) {
+					if (rs.next()) {
+						userID = rs.getInt("userID");
+					} else {
+						throw new Exception("User not found");
+					}
+				}
 			}
 
 			// Update Room Table

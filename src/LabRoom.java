@@ -1,5 +1,6 @@
 package src;
 import java.sql.*;
+import java.util.ArrayList;
 // Allows stratPattern to stay seperate
 // import stratPattern.Device;
 
@@ -54,76 +55,52 @@ public class LabRoom {
 	public int[] availablDevices() {
 		return devicesHelper(true);
 	}
+
+	// Kept for readability while preserving existing call sites.
+	public int[] availableDevices() {
+		return availablDevices();
+	}
 	
 	// When want available = true, return only available devices. Else return all devices
 	private int[] devicesHelper(boolean wantAvailable) {
-		String onlyAvailable = "";
-		if(wantAvailable)
-			onlyAvailable = "where status = \"available\"";
+		String statusFilter = wantAvailable ? " AND status = 'available'" : "";
+		ArrayList<Integer> devices = new ArrayList<>();
 
-		int pcCount=0, printerCount=0, printer3dCount=0, count=0, i=0;
-		int[] devices = new int[count];
-		try {
-			// Form Connection
-			Statement stmt = FormConnection.connect();
-			
-			// Get Device Count
-			// PCs
-			String strSelect = "select count(*) from pc"+onlyAvailable;
-			ResultSet rset = stmt.executeQuery(strSelect);
-			rset.next();
-			pcCount = rset.getInt("count(*)");
-			count += pcCount;
-			// Printers
-			if (this.id==259) {
-				strSelect = "select count(*) from printer"+onlyAvailable;
-				rset = stmt.executeQuery(strSelect);
-				rset.next();
-				
-				printerCount = rset.getInt("count(*)");
-				count += printerCount;
-			}
-			// Printer3Ds
-			if (this.id==260) {
-				strSelect = "select count(*) from printer3d"+onlyAvailable;
-				rset = stmt.executeQuery(strSelect);
-				rset.next();
-				printer3dCount = rset.getInt("count(*)");
-				count += printer3dCount;
-			}
-			
-			// Add IDs to array
-			// Get PC IDs
-			if (pcCount!=0) {
-				strSelect = "select pcID from pc"+onlyAvailable;
-				rset = stmt.executeQuery(strSelect);
-				// add pc ids to array
+		try (Statement stmt = FormConnection.connect()) {
+			String pcRoomField = this.id == 259 ? "room259ID" : "room260ID";
+			String strSelect = "SELECT pcID FROM pc WHERE " + pcRoomField + " IS NOT NULL" + statusFilter;
+			try (ResultSet rset = stmt.executeQuery(strSelect)) {
 				while(rset.next()) {
-					devices[i++] = rset.getInt("pcID");
+					devices.add(rset.getInt("pcID"));
 				}
 			}
-			// Get Printer IDs
-			if (printerCount!=0) {
-				strSelect = "select printerID from printer"+onlyAvailable;
-				rset = stmt.executeQuery(strSelect);
-				// add printer ids to array
-				while(rset.next()) {
-					devices[i++] = rset.getInt("printerID");
+
+			if (this.id == 259) {
+				strSelect = "SELECT printerID FROM printer WHERE room259ID IS NOT NULL" + statusFilter;
+				try (ResultSet rset = stmt.executeQuery(strSelect)) {
+					while(rset.next()) {
+						devices.add(rset.getInt("printerID"));
+					}
 				}
 			}
-			// Get Printer3d IDs
-			if (pcCount!=0) {
-				strSelect = "select printer3dID from printer3d"+onlyAvailable;
-				rset = stmt.executeQuery(strSelect);
-				// add pc ids to array
-				while(rset.next()) {
-					devices[i++] = rset.getInt("printer3dID");
+
+			if (this.id == 260) {
+				strSelect = "SELECT printer3dID FROM printer3d WHERE room260ID IS NOT NULL" + statusFilter;
+				try (ResultSet rset = stmt.executeQuery(strSelect)) {
+					while(rset.next()) {
+						devices.add(rset.getInt("printer3dID"));
+					}
 				}
 			}
 		} catch(Exception e) {
 			System.out.println(e);
 		}
-		return devices;
+
+		int[] result = new int[devices.size()];
+		for (int i = 0; i < devices.size(); i++) {
+			result[i] = devices.get(i);
+		}
+		return result;
 	}
 		
 }

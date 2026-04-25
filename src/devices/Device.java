@@ -30,9 +30,7 @@ public class Device {
 	}
 	public Device DeviceFromDb(int id, types type) {
 		boolean status=false;
-		try {
-			// Form Connection
-			Statement stmt = FormConnection.connect();
+		try (Statement stmt = FormConnection.connect()) {
 
 			// Update Device Status
 			String tableName = "";
@@ -53,9 +51,10 @@ public class Device {
 					break;
 			}
 			String strSelect = "select status from "+tableName+" where "+idName+"="+id;
-			ResultSet rset = stmt.executeQuery(strSelect);
-			if (rset.next()) {
-				status = rset.getString("status").equals("available");
+			try (ResultSet rset = stmt.executeQuery(strSelect)) {
+				if (rset.next()) {
+					status = rset.getString("status").equals("available");
+				}
 			}
 			return new Device(id, type, status);
 		} catch (Exception e) {
@@ -73,10 +72,10 @@ public class Device {
 				this.statusStrategy = new ComputerStrategy();
 				break;
 			case PRINTER:
-				this.statusStrategy = new Printer3DStrategy();
+				this.statusStrategy = new PrinterStrategy();
 				break;
 			case PRINTER3D:
-				this.statusStrategy = new PrinterStrategy();
+				this.statusStrategy = new Printer3DStrategy();
 				break;
 			default:
 				break;
@@ -104,6 +103,7 @@ public class Device {
 	}
 	public void setType(types type) {
 		this.type = type;
+		setStatusStrategy();
 	}
 	public void setStatus(boolean inUse) {
 		this.status = inUse;
