@@ -1,5 +1,6 @@
 package src.users;
 import java.sql.*;
+import java.text.Normalizer.Form;
 
 import src.FormConnection;
 
@@ -15,8 +16,8 @@ public abstract class UserAccount {
         this.email=email;
         this.Password=Password;
     }
-    public static UserAccount createUserAccount(Connection conn, int userID, String name, String email, String password, String role) throws SQLException{
-        
+    public static UserAccount createUserAccount(int userID, String name, String email, String password, String role) throws SQLException{
+        Connection conn = FormConnection.connect().getConnection();
         String sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?, ?)";
         try(PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
             ps.setString(2, name);
@@ -28,6 +29,7 @@ public abstract class UserAccount {
             if(!keys.next()){
                 throw new RuntimeException("Failed to retrieve generated user ID");
             }
+            //gets the auto incremented id from the database and makes a new user acount.
             int newID = keys.getInt(1);
             return switch (role) {
                 case "student" -> new Student(newID, name, email, password);
@@ -40,8 +42,9 @@ public abstract class UserAccount {
 
 
 
-    public static UserAccount login(Connection conn, String email, String password)throws SQLException{
+    public static UserAccount login(String email, String password)throws SQLException{
         //connects to the database creates a time stamp for the room. 
+        Connection conn = FormConnection.connect().getConnection();
         String sql ="SELECT * FROM users WHERE email = ? AND password = ?";
         
             try(PreparedStatement ps = conn.prepareStatement(sql)){
