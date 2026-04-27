@@ -115,6 +115,10 @@ public class OccupancyTracker {
 				throw new Exception("Device is not assigned to a room");
 			}
 
+			// Count active rows directly so occupancy is derived from current sessions,
+			// then store that snapshot on the newly inserted login row.
+			int currentOccupancy = countActiveSessions(stmt, roomTable);
+
 			// Get userID
 			int userID = -1;
 			String userSQL = "SELECT userID FROM users WHERE email = ?";
@@ -126,17 +130,6 @@ public class OccupancyTracker {
 					} else {
 						throw new Exception("User not found");
 					}
-				}
-			}
-
-			// Get Current Occupancy
-			int currentOccupancy = 0;
-
-			String occSQL = "SELECT currentOccupancy FROM " + roomTable +
-					" ORDER BY " + roomTable + "ID DESC LIMIT 1";
-			try (ResultSet rs = stmt.executeQuery(occSQL)) {
-				if (rs.next()) {
-					currentOccupancy = rs.getInt("currentOccupancy");
 				}
 			}
 
@@ -156,6 +149,16 @@ public class OccupancyTracker {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private int countActiveSessions(Statement stmt, String roomTable) throws SQLException {
+		String occSQL = "SELECT COUNT(*) AS activeCount FROM " + roomTable + " WHERE sessionlogout IS NULL";
+		try (ResultSet rs = stmt.executeQuery(occSQL)) {
+			if (rs.next()) {
+				return rs.getInt("activeCount");
+			}
+		}
+		return 0;
 	}
 
 	// Record Logout
