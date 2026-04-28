@@ -9,15 +9,15 @@ public class Admin extends UserAccount{
         super(adminId, name, email, password);
     }
     
-    public UserAccount createUserAccount(int userID, String name, String email, String password, String role) throws SQLException{
+    public UserAccount createUserAccount(String name, String email, String password, String role) throws SQLException{
         //only admin can create user accounts. Admin can also specify the role of the new user account.
         Connection conn = FormConnection.connect().getConnection();
-        String sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
         try(PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
-            ps.setString(2, name);
-            ps.setString(3, email);
-            ps.setString(4, password);
-            ps.setString(5, role);
+            ps.setString(1, name);
+            ps.setString(2, email);
+            ps.setString(3, password);
+            ps.setString(4, role);
             ps.executeUpdate();
             ResultSet keys= ps.getGeneratedKeys();
             if(!keys.next()){
@@ -94,7 +94,41 @@ public class Admin extends UserAccount{
     //manage devices or labs : view current users who are logged into devices. 
     //can set status to available and offline 
     //can force logout all users
-
+    public void showLoggedInUsers() {
+		String sql = "SELECT u.email, u.name, 'room259' AS room, r.sessionlogin " +
+				"FROM room259 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
+				"UNION ALL " +
+				"SELECT u.email, u.name, 'room260' AS room, r.sessionlogin " +
+				"FROM room260 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
+				"ORDER BY room, sessionlogin";
+		try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+			System.out.println("\nUsers currently logged into devices:");
+			boolean found = false;
+			while (rs.next()) {
+				found = true;
+				System.out.println("- " + rs.getString("email") + " (" + rs.getString("name") + ") in " + rs.getString("room") + " since " + rs.getString("sessionlogin"));
+			}
+			if (!found) {
+				System.out.println("No active sessions.");
+			}
+		} catch (Exception e) {
+			System.out.println("Error reading active sessions: " + e.getMessage());
+		}
+	}
+    public void logOutAllUsers() {
+		try (Connection conn = FormConnection.connectDb(); Statement stmt = conn.createStatement()) {
+			conn.setAutoCommit(false);
+			int room259Rows = stmt.executeUpdate("UPDATE room259 SET sessionlogout = NOW(), currentOccupancy = 0 WHERE sessionlogout IS NULL");
+			int room260Rows = stmt.executeUpdate("UPDATE room260 SET sessionlogout = NOW(), currentOccupancy = 0 WHERE sessionlogout IS NULL");
+			stmt.executeUpdate("UPDATE pc SET status = 'available' WHERE status = 'in_use'");
+			stmt.executeUpdate("UPDATE printer SET status = 'available' WHERE status = 'in_use'");
+			stmt.executeUpdate("UPDATE printer3d SET status = 'available' WHERE status = 'in_use'");
+			conn.commit();
+			System.out.println("Logged out all users. room259 rows updated: " + room259Rows + ", room260 rows updated: " + room260Rows);
+		} catch (Exception e) {
+			System.out.println("Error logging out all users: " + e.getMessage());
+		}
+	}
     
 
     public int getRole(){

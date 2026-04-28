@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.Scanner;
 
 import Test.Authenticate;
+import src.users.Admin;
+import src.users.Faculty;
+import src.users.Student;
 import src.users.UserAccount;
 import src.devices.Device;
 
@@ -116,23 +119,19 @@ public class InteractiveTerminal {
 			showNotificationsPlaceholder(user);
 			int role = user.getRole();
 			if(role == 1){
-				studentMenu(user);
+				Student userStudent = (Student) user;
+				studentMenu(userStudent);
 			} else if(role == 2){
-				facultyMenu(user);
+				Faculty userFaculty = (Faculty) user;
+				facultyMenu(userFaculty);
 			} else if(role == 3){
-				adminMenu(user);
+				Admin userAdmin = (Admin) user;
+				adminMenu(userAdmin);
 			} else {
 				System.out.println("Unknown role. Returning to main menu.");
 			}
 		}
 	}
-
-
-
-
-
-
-
 
 
 
@@ -220,7 +219,7 @@ public class InteractiveTerminal {
 		}
 	}
 
-	private void facultyMenu(UserAccount user) {
+	private void facultyMenu(Faculty user) {
 		while (true) {
 			System.out.println("\nFaculty Menu:");
 			System.out.println("1. Login to a device");
@@ -236,6 +235,7 @@ public class InteractiveTerminal {
 					break;
 				case 2:
 					viewUserHistoryPlaceholder();
+					//user.viewAllHistory(null);
 					break;
 				case 3:
 					sendNotificationPlaceholder();
@@ -248,7 +248,7 @@ public class InteractiveTerminal {
 		}
 	}
 
-	private void adminMenu(UserAccount user) {
+	private void adminMenu(Admin user) {
 		while (true) {
 			System.out.println("\nAdmin Menu:");
 			System.out.println("1. Login to a device");
@@ -265,12 +265,13 @@ public class InteractiveTerminal {
 					break;
 				case 2:
 					viewUserHistoryPlaceholder();
+					//user.viewAllHistory(null);
 					break;
 				case 3:
 					sendNotificationPlaceholder();
 					break;
 				case 4:
-					manageDevicesPlaceholder();
+					manageDevicesPlaceholder(user);
 					break;
 				case 5:
 					return;
@@ -528,7 +529,7 @@ public class InteractiveTerminal {
 		System.out.println("Notification queued in simulation only for " + targetEmail + ": " + message);
 	}
 
-	private void manageDevicesPlaceholder() {
+	private void manageDevicesPlaceholder(Admin userAdmin) {
 		while (true) {
 			System.out.println("\nManage Devices/Labs:");
 			System.out.println("1. View users currently logged into devices");
@@ -539,7 +540,7 @@ public class InteractiveTerminal {
 			int choice = readInt("Choose an option: ");
 			switch (choice) {
 				case 1:
-					showLoggedInUsers();
+					userAdmin.showLoggedInUsers();
 					break;
 				case 2:
 					setDeviceStatusForAdmin("available");
@@ -548,7 +549,7 @@ public class InteractiveTerminal {
 					setDeviceStatusForAdmin("offline");
 					break;
 				case 4:
-					logOutAllUsers();
+					userAdmin.logOutAllUsers();
 					break;
 				case 5:
 					return;
@@ -557,28 +558,28 @@ public class InteractiveTerminal {
 			}
 		}
 	}
-
-	private void showLoggedInUsers() {
-		String sql = "SELECT u.email, u.name, 'room259' AS room, r.sessionlogin " +
-				"FROM room259 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
-				"UNION ALL " +
-				"SELECT u.email, u.name, 'room260' AS room, r.sessionlogin " +
-				"FROM room260 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
-				"ORDER BY room, sessionlogin";
-		try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-			System.out.println("\nUsers currently logged into devices:");
-			boolean found = false;
-			while (rs.next()) {
-				found = true;
-				System.out.println("- " + rs.getString("email") + " (" + rs.getString("name") + ") in " + rs.getString("room") + " since " + rs.getString("sessionlogin"));
-			}
-			if (!found) {
-				System.out.println("No active sessions.");
-			}
-		} catch (Exception e) {
-			System.out.println("Error reading active sessions: " + e.getMessage());
-		}
-	}
+//Moved function to admin class
+	// private void showLoggedInUsers() {
+	// 	String sql = "SELECT u.email, u.name, 'room259' AS room, r.sessionlogin " +
+	// 			"FROM room259 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
+	// 			"UNION ALL " +
+	// 			"SELECT u.email, u.name, 'room260' AS room, r.sessionlogin " +
+	// 			"FROM room260 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
+	// 			"ORDER BY room, sessionlogin";
+	// 	try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+	// 		System.out.println("\nUsers currently logged into devices:");
+	// 		boolean found = false;
+	// 		while (rs.next()) {
+	// 			found = true;
+	// 			System.out.println("- " + rs.getString("email") + " (" + rs.getString("name") + ") in " + rs.getString("room") + " since " + rs.getString("sessionlogin"));
+	// 		}
+	// 		if (!found) {
+	// 			System.out.println("No active sessions.");
+	// 		}
+	// 	} catch (Exception e) {
+	// 		System.out.println("Error reading active sessions: " + e.getMessage());
+	// 	}
+	// }
 
 	private void setDeviceStatusForAdmin(String targetStatus) {
 		while (true) {
@@ -708,20 +709,20 @@ public class InteractiveTerminal {
 		}
 	}
 
-	private void logOutAllUsers() {
-		try (Connection conn = FormConnection.connectDb(); Statement stmt = conn.createStatement()) {
-			conn.setAutoCommit(false);
-			int room259Rows = stmt.executeUpdate("UPDATE room259 SET sessionlogout = NOW(), currentOccupancy = 0 WHERE sessionlogout IS NULL");
-			int room260Rows = stmt.executeUpdate("UPDATE room260 SET sessionlogout = NOW(), currentOccupancy = 0 WHERE sessionlogout IS NULL");
-			stmt.executeUpdate("UPDATE pc SET status = 'available' WHERE status = 'in_use'");
-			stmt.executeUpdate("UPDATE printer SET status = 'available' WHERE status = 'in_use'");
-			stmt.executeUpdate("UPDATE printer3d SET status = 'available' WHERE status = 'in_use'");
-			conn.commit();
-			System.out.println("Logged out all users. room259 rows updated: " + room259Rows + ", room260 rows updated: " + room260Rows);
-		} catch (Exception e) {
-			System.out.println("Error logging out all users: " + e.getMessage());
-		}
-	}
+	// private void logOutAllUsers() {
+	// 	try (Connection conn = FormConnection.connectDb(); Statement stmt = conn.createStatement()) {
+	// 		conn.setAutoCommit(false);
+	// 		int room259Rows = stmt.executeUpdate("UPDATE room259 SET sessionlogout = NOW(), currentOccupancy = 0 WHERE sessionlogout IS NULL");
+	// 		int room260Rows = stmt.executeUpdate("UPDATE room260 SET sessionlogout = NOW(), currentOccupancy = 0 WHERE sessionlogout IS NULL");
+	// 		stmt.executeUpdate("UPDATE pc SET status = 'available' WHERE status = 'in_use'");
+	// 		stmt.executeUpdate("UPDATE printer SET status = 'available' WHERE status = 'in_use'");
+	// 		stmt.executeUpdate("UPDATE printer3d SET status = 'available' WHERE status = 'in_use'");
+	// 		conn.commit();
+	// 		System.out.println("Logged out all users. room259 rows updated: " + room259Rows + ", room260 rows updated: " + room260Rows);
+	// 	} catch (Exception e) {
+	// 		System.out.println("Error logging out all users: " + e.getMessage());
+	// 	}
+	// }
 
 	private int readInt(String prompt) {
 		while (true) {
