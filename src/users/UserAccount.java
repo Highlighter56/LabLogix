@@ -1,6 +1,6 @@
 package src.users;
 import java.sql.*;
-import java.text.Normalizer.Form;
+
 
 import src.FormConnection;
 
@@ -16,31 +16,6 @@ public abstract class UserAccount {
         this.email=email;
         this.Password=Password;
     }
-    public static UserAccount createUserAccount(int userID, String name, String email, String password, String role) throws SQLException{
-        Connection conn = FormConnection.connect().getConnection();
-        String sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?, ?)";
-        try(PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
-            ps.setString(2, name);
-            ps.setString(3, email);
-            ps.setString(4, password);
-            ps.setString(5, role);
-            ps.executeUpdate();
-            ResultSet keys= ps.getGeneratedKeys();
-            if(!keys.next()){
-                throw new RuntimeException("Failed to retrieve generated user ID");
-            }
-            //gets the auto incremented id from the database and makes a new user acount.
-            int newID = keys.getInt(1);
-            return switch (role) {
-                case "student" -> new Student(newID, name, email, password);
-                case "faculty" -> new Faculty(newID, name, email, password);
-                case "admin" -> new Admin(newID, name, email, password);
-                default -> throw new IllegalArgumentException("Invalid user role");
-            };
-        }
-    }
-
-
 
     public static UserAccount login(String email, String password)throws SQLException{
         //connects to the database creates a time stamp for the room. 
@@ -75,7 +50,26 @@ public abstract class UserAccount {
     }  
     public void logout(){
         //create call to occupancy tracker to record logout time
+
     }
+    public void viewUseHistory(int userID, String room){
+
+        String sql = "SELECT sessionlogin, sessionlogout FROM " + room + " WHERE userID = ?";
+        try(PreparedStatement ps = FormConnection.connect().getConnection().prepareStatement(sql)){
+            ps.setInt(1, userID);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                Timestamp loginTime = rs.getTimestamp("sessionlogin");
+                Timestamp logoutTime = rs.getTimestamp("sessionlogout");
+                System.out.println("Login: " + loginTime + ", Logout: " + logoutTime);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error retrieving use history");
+        }
+    }
+
+
 
     public int getUserID(){
         return userID;

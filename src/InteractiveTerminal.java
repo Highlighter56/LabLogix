@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 import Test.Authenticate;
-import Test.UserAccount;
+import src.users.UserAccount;
 import src.devices.Device;
 
 public class InteractiveTerminal {
@@ -47,7 +47,7 @@ public class InteractiveTerminal {
 			}
 		}
 	}
-
+/* 
 	private void handleLoginLoop() {
 		while (true) {
 			System.out.println("\nLogin Flow (type 'back' for email to return):");
@@ -82,7 +82,60 @@ public class InteractiveTerminal {
 			}
 			return;
 		}
+	}*/
+
+	private void handleLoginLoop(){
+		while(true){
+			System.out.println("\nLogin Flow (type 'back' for email to return):");
+			String email = readLine("Email: ");
+			if ("back".equalsIgnoreCase(email)) {
+				return;
+			}
+			String password = readLine("Password: ");
+
+			//Authenticate.AuthResult result = Authenticate.authenticate(email, password);
+			// if (!result.isAuthenticated()) {
+			// 	System.out.println("Login failed: " + result.getMessage());
+			// 	if (!askRetryOrBack("Retry login? (y = retry, n = main menu): ")) {
+			// 		return;
+			// 	}
+			// 	continue;
+			// }
+			
+			UserAccount user;
+			try {
+				user = UserAccount.login(email, password);
+			} catch (Exception e) {
+				System.out.println("Login failed: " + e.getMessage());
+				if (!askRetryOrBack("Retry login? (y = retry, n = main menu): ")) {
+					return;
+				}
+				continue;
+			}
+			System.out.println("Welcome, " + user.getEmail() + " (" + user.getRole() + ")");
+			showNotificationsPlaceholder(user);
+			int role = user.getRole();
+			if(role == 1){
+				studentMenu(user);
+			} else if(role == 2){
+				facultyMenu(user);
+			} else if(role == 3){
+				adminMenu(user);
+			} else {
+				System.out.println("Unknown role. Returning to main menu.");
+			}
+		}
 	}
+
+
+
+
+
+
+
+
+
+
 
 	private void handleLogoutLoop() {
 		while (true) {
