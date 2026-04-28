@@ -1,3 +1,4 @@
+-- initial database commit
 -- show databases;
 -- run this file first to create database, and so on
 create database labLogix;
