@@ -34,9 +34,9 @@ insert into pc (status, room260ID, room259ID) values
 	-- room260
     ('available', 1, NULL), 
 	('in_use', 1, NULL), 
-	('offline', 2, NULL), 
+	('offline', 1, NULL), 
 	-- room259
-	('available', NULL, 1), 
+	('available', NULL, 2), 
 	('in_use', NULL, 2), 
 	('offline', NULL, 2);
 
