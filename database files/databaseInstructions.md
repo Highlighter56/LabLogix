@@ -10,6 +10,10 @@ There are several MySQL Files created for the database
 
     Automatically adding current timestamps for each session login times 
 
+3. [notificationTable](notificationTable.sql)
+
+    creates a notification table, and inserts blank/empty data
+
 ## Additional Files and their purposes
 
 [testFile](testFile.sql): shows all of the data in each column of the table (can be adjusted to show column headers as well)
