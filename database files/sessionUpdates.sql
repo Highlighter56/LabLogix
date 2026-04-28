@@ -1,3 +1,4 @@
+-- login timestamps added to the database
 use labLogix;
 
 -- room260 edits

@@ -1,3 +1,4 @@
+-- test data
 use labLogix;
 
 -- users table
