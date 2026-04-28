@@ -1,5 +1,13 @@
-runCommands.txt
 .env
-Test
+Test*
 lib
-database
+
+# Java build artifacts
+*.class
+out/
+
+# Node dependencies
+website/node_modules/
+
+# Local scripts
+scripts/local/
