@@ -10,14 +10,6 @@ There are several MySQL Files created for the database
 
     Automatically adding current timestamps for each session login times 
 
-3. 
-
-4. 
-
-5. 
-
-6. 
-
 ## Additional Files and their purposes
 
 [testFile](testFile.sql): shows all of the data in each column of the table (can be adjusted to show column headers as well)
@@ -25,3 +17,5 @@ There are several MySQL Files created for the database
 [testData](testData.sql): test data created for 
 
 [clearTables](clearTables.sql): clears test data from each table (so that when new data is added to *testData*, there's no conflicts)
+
+[deviceAvailabilityQueries](deviceAvailabilityQueries.sql): queries listing the device status' across 2 rooms
