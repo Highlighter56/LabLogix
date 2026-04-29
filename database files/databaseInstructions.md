@@ -14,6 +14,10 @@ There are several MySQL Files created for the database
 
     creates a notification table, and inserts blank/empty data
 
+4. [adduserIDColumn](adduserIDColumn.sql)
+
+    adding "userID" column to each of the device types so that we can track it on login
+
 ## Additional Files and their purposes
 
 [testFile](testFile.sql): shows all of the data in each column of the table (can be adjusted to show column headers as well)
