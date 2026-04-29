@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room259</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/259Style.css">
 </head>
 <body class="room259">
 
     <h1>LabLogix</h1>
+
+    <img src="../images/room259.jpeg" alt="room259 background">
 
     <div class="form-box">
 
@@ -16,80 +18,93 @@
             <div class="buttons">
                 <button type="button" onclick="window.location.href='/room260'">Room 260</button>
                 <button type="button" onclick="window.location.href='/room259'">Room 259</button>
-                <button type="button" onclick="window.location.href='/usagehistory'">Usage History</button>
+                <button type="button" onclick="window.location.href='/home'">Home</button>
             </div>
 
             <h2>Room259</h2>
 
-            <!--Displays the status of room259-->
-            <div id="room259-status">
-                <script>
-                    async function statusRoom259(){
-                        const response = await fetch('/api/room259');
-                        const data = await response.json();
+            <!--Separate the content into two columns-->
+            <div class="columns">
 
-                        const container = document.getElementById('room259-status');
+                <!--Left column-->
+                <div id="left-column">
 
-                        data.forEach(room => {
-                            container.innerText = `Room Status: ${room.status}`;
-                        });
-                    }
-                    statusRoom259();
-                </script>
+                    <!--Displays the status of room259-->
+                    <div id="room259-status">
+                        <script>
+                            async function statusRoom259(){
+                                const response = await fetch('/api/room259');
+                                const data = await response.json();
+        
+                                const container = document.getElementById('room259-status');
+        
+                                data.forEach(room => {
+                                    container.innerText = `Room Status: ${room.status}`;
+                                });
+                            }
+                            statusRoom259();
+                        </script>
+                    </div>
+
+                    <!--Displays the current occupancy of room259-->
+                    <div id="room259-occupancy">
+                        <script>
+                            async function occupancyRoom259() {
+                                const response = await fetch('/api/room259');
+                                const data = await response.json();
+        
+                                const container = document.getElementById('room259-occupancy');
+        
+                                data.forEach(room => {
+                                    container.innerText = `Occupancy: ${room.currentOccupancy} / ${room.capacity}`;
+                                });
+                            }
+                            occupancyRoom259();
+                        </script>
+                    </div>
+                </div>
+
+                <!--Right column-->
+                <div class="right-column">
+                    <!--Displays which and how many devices are in use in room259-->
+                    <h3>Devices in use:</h3>
+                    <ul id="room259-devices"></ul>
+                    <script>
+                        async function pcRoom259(){
+                            const response = await fetch('/api/pc');
+                            const data = await response.json();
+        
+                            const container = document.getElementById('room259-devices');
+        
+                            data.forEach(pc => {
+                                const li = document.createElement('li');
+                                li.textContent = `PC: ${pc.status}`;
+                                container.appendChild(li);
+                            });
+                        }
+                        pcRoom259();
+        
+                        async function printerRoom259() {
+                            const response = await fetch('/api/printer');
+                            const data = await response.json();
+        
+                            const container = document.getElementById('room259-devices');
+        
+                            data.forEach(printer3d => {
+                                const li = document.createElement('li');
+                                li.textContent = `Printer: ${printer.status}`;
+                                container.appendChild(li);
+                            });
+                        }
+                        printerRoom259();
+                    </script>
+                </div>
             </div>
-
-            <!--Displays the current occupancy of room259-->
-            <div id="room259-occupancy">
-                <script>
-                    async function occupancyRoom259() {
-                        const response = await fetch('/api/room259');
-                        const data = await response.json();
-
-                        const container = document.getElementById('room259-occupancy');
-
-                        data.forEach(room => {
-                            container.innerText = `Occupancy: ${room.currentOccupancy} / ${room.capacity}`;
-                        });
-                    }
-                    occupancyRoom259();
-                </script>
-            </div>
-
-            <!--Displays which and how many devices are in use in room259-->
-            <h3>Devices in use:</h3>
-            <ul id="room259-devices"></ul>
-            <script>
-                async function pcRoom259(){
-                    const response = await fetch('/api/pc');
-                    const data = await response.json();
-
-                    const container = document.getElementById('room259-devices');
-
-                    data.forEach(pc => {
-                        const li = document.createElement('li');
-                        li.textContent = `PC: ${pc.status}`;
-                        container.appendChild(li);
-                    });
-                }
-                pcRoom259();
-
-                async function printerRoom259() {
-                    const response = await fetch('/api/printer');
-                    const data = await response.json();
-
-                    const container = document.getElementById('room259-devices');
-
-                    data.forEach(printer3d => {
-                        const li = document.createElement('li');
-                        li.textContent = `Printer: ${printer.status}`;
-                        container.appendChild(li);
-                    });
-                }
-                printerRoom259();
-            </script>
 
             <!--Displays peak usage & least usage time as a chart-->
-            <canvas id="usageTimeChart"></canvas>
+            <div class="chart-wrapper">
+                <canvas id="usageTimeChart"></canvas>
+            </div>
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -117,7 +132,14 @@
                             }]
                         },
                         options: {
+                            responsive: true,
+                            maintainAspectRation: false,
                             plugins: {
+                                legend: {
+                                    labels: {
+                                        color: '#FFFFFF'
+                                    }
+                                },
                                 tooltip: {
                                     callbacks: {
                                         label: (context) => {
@@ -129,7 +151,23 @@
                                 }
                             },
                             scales: {
-                            y: {beginAtZero: true}
+                                x: {
+                                    ticks: {
+                                        color: '#FFFFFF'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.2)'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: '#FFFFFF'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.2)'
+                                    }
+                                }
                             }
                         }
                     });
