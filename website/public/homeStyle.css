@@ -1,0 +1,24 @@
+h1 {
+    text-align: center;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: rgb(5, 5, 175);
+    color: rgb(252, 252, 252);
+}
+
+nav {
+    text-align: end;
+    text-decoration: none;
+    background-color: rgb(5, 5, 175);
+    color: rgb(252, 252, 252);
+}
+
+img {
+    width: 200px;
+    height: 80px;
+}
+
+footer {
+    background-color: lightsalmon;
+    padding: 2px;
+    margin: 0;
+}
