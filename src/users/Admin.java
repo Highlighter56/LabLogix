@@ -11,13 +11,14 @@ public class Admin extends UserAccount{
     
     public UserAccount createUserAccount(String name, String email, String password, String role) throws SQLException{
         //only admin can create user accounts. Admin can also specify the role of the new user account.
-        Connection conn = FormConnection.connect().getConnection();
-        String sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
+        String normalizedRole = role.toLowerCase();
+        Connection conn = FormConnection.connectDb();
+        String sql = "INSERT INTO users (name, email, password, userType) VALUES (?, ?, ?, ?)";
         try(PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
             ps.setString(1, name);
             ps.setString(2, email);
             ps.setString(3, password);
-            ps.setString(4, role);
+            ps.setString(4, normalizedRole.equals("admin") ? "administrator" : normalizedRole);
             ps.executeUpdate();
             ResultSet keys= ps.getGeneratedKeys();
             if(!keys.next()){
@@ -25,10 +26,10 @@ public class Admin extends UserAccount{
             }
             //gets the auto incremented id from the database and makes a new user acount.
             int newID = keys.getInt(1);
-            return switch (role) {
+            return switch (normalizedRole) {
                 case "student" -> new Student(newID, name, email, password);
                 case "faculty" -> new Faculty(newID, name, email, password);
-                case "admin" -> new Admin(newID, name, email, password);
+                case "admin", "administrator" -> new Admin(newID, name, email, password);
                 default -> throw new IllegalArgumentException("Invalid user role");
             };
         }
@@ -36,7 +37,7 @@ public class Admin extends UserAccount{
 
     public void removeUser(int targetUserID){
         String sql = "DELETE FROM users WHERE userID = ?";
-        try(PreparedStatement ps = FormConnection.connect().getConnection().prepareStatement(sql)){
+        try(PreparedStatement ps = FormConnection.connectDb().prepareStatement(sql)){
             ps.setInt(1, targetUserID);
             ps.executeUpdate();
             System.out.println("User removed successfully");
@@ -45,8 +46,8 @@ public class Admin extends UserAccount{
         } 
     }
     public void changeUserRole(int userID, String newRole){
-        String sql = "UPDATE users SET role = ? WHERE userID = ?";
-        try(PreparedStatement ps = FormConnection.connect().getConnection().prepareStatement(sql)){
+        String sql = "UPDATE users SET userType = ? WHERE userID = ?";
+        try(PreparedStatement ps = FormConnection.connectDb().prepareStatement(sql)){
             ps.setString(1, newRole);
             ps.setInt(2, userID);
             ps.executeUpdate();
@@ -55,36 +56,30 @@ public class Admin extends UserAccount{
             e.printStackTrace();            throw new RuntimeException("Error updating user role");
         } 
     }
-    /* 
-    private void manageUser(int targetUserID){
-        String sql = "SELECT * FROM users WHERE userID = ?";
-        try(PreparedStatement ps = FormConnection.connect().getConnection().prepareStatement(sql)){
-            ps.setInt(1, targetUserID);
-            //return ps.executeQuery();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error managing user");
-        }
-    }*/
-    public ResultSet viewAllUsers(){
-        String sql = "SELECT userID, name, email, role FROM users";
-        try(PreparedStatement ps = FormConnection.connect().getConnection().prepareStatement(sql)){
-            return ps.executeQuery();
+    public void viewAllUsers(){
+        String sql = "SELECT userID, name, email, userType FROM users";
+        try(PreparedStatement ps = FormConnection.connectDb().prepareStatement(sql)){
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                System.out.println("User: " + rs.getInt("userID") + " | " + rs.getString("name") + " | " + rs.getString("email") + " | " + rs.getString("userType"));
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException("Error retrieving users");
         }
     }
     public void viewAllHistory(String room){
-        String sql = "SELECT users.name, " + room + ".sessionlogin, " + room + ".sessionlogout FROM " + room +
+        String sql = "SELECT users.name, " + room + ".sessionlogin, " + room + ".sessionlogout, " + room + ".deviceID, " + room + ".deviceType FROM " + room +
                 " JOIN users ON " + room + ".userID = users.userID ORDER BY " + room + "ID DESC";
-        try(PreparedStatement ps = FormConnection.connect().getConnection().prepareStatement(sql)){
+        try(PreparedStatement ps = FormConnection.connectDb().prepareStatement(sql)){
             ResultSet rs = ps.executeQuery();
             while(rs.next()){
                 String name = rs.getString("name");
                 Timestamp loginTime = rs.getTimestamp("sessionlogin");
                 Timestamp logoutTime = rs.getTimestamp("sessionlogout");
-                System.out.println("User: " + name + ", Login: " + loginTime + ", Logout: " + logoutTime);
+                int deviceId = rs.getInt("deviceID");
+                String deviceType = rs.getString("deviceType");
+                System.out.println("User: " + name + ", Device: " + deviceType + " " + deviceId + ", Login: " + loginTime + ", Logout: " + logoutTime);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -95,10 +90,10 @@ public class Admin extends UserAccount{
     //can set status to available and offline 
     //can force logout all users
     public void showLoggedInUsers() {
-		String sql = "SELECT u.email, u.name, 'room259' AS room, r.sessionlogin " +
+        String sql = "SELECT u.email, u.name, 'room259' AS room, r.deviceType, r.deviceID, r.sessionlogin " +
 				"FROM room259 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
 				"UNION ALL " +
-				"SELECT u.email, u.name, 'room260' AS room, r.sessionlogin " +
+                "SELECT u.email, u.name, 'room260' AS room, r.deviceType, r.deviceID, r.sessionlogin " +
 				"FROM room260 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
 				"ORDER BY room, sessionlogin";
 		try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
@@ -106,7 +101,7 @@ public class Admin extends UserAccount{
 			boolean found = false;
 			while (rs.next()) {
 				found = true;
-				System.out.println("- " + rs.getString("email") + " (" + rs.getString("name") + ") in " + rs.getString("room") + " since " + rs.getString("sessionlogin"));
+                System.out.println("- " + rs.getString("email") + " (" + rs.getString("name") + ") in " + rs.getString("room") + " on " + rs.getString("deviceType") + " " + rs.getInt("deviceID") + " since " + rs.getString("sessionlogin"));
 			}
 			if (!found) {
 				System.out.println("No active sessions.");

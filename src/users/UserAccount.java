@@ -19,8 +19,8 @@ public abstract class UserAccount {
 
     public static UserAccount login(String email, String password)throws SQLException{
         //connects to the database creates a time stamp for the room. 
-        Connection conn = FormConnection.connect().getConnection();
-        String sql ="SELECT * FROM users WHERE email = ? AND password = ?";
+        Connection conn = FormConnection.connectDb();
+        String sql ="SELECT * FROM users WHERE email = ?";
         
             try(PreparedStatement ps = conn.prepareStatement(sql)){
                 ps.setString(1, email);
@@ -36,12 +36,12 @@ public abstract class UserAccount {
 
                 int userID = rs.getInt("userID");
                 String name = rs.getString("name");
-                String role = rs.getString("role");
+                String role = rs.getString("userType");
 
                 return switch (role) {
-                    case "student" -> new Student(userID, name, email, password);
-                    case "faculty" -> new Faculty(userID, name, email, password);
-                    case "admin" -> new Admin(userID, name, email, password);
+                    case "student" -> new Student(userID, name, email, storedPassword);
+                    case "faculty" -> new Faculty(userID, name, email, storedPassword);
+                    case "administrator" -> new Admin(userID, name, email, storedPassword);
                     default -> throw new IllegalArgumentException("Invalid user role");
                 };
             }
@@ -50,7 +50,7 @@ public abstract class UserAccount {
     }
 
     public static UserAccount findByEmail(String email) throws SQLException {
-        Connection conn = FormConnection.connect().getConnection();
+        Connection conn = FormConnection.connectDb();
         String sql = "SELECT * FROM users WHERE email = ?";
         
         try(PreparedStatement ps = conn.prepareStatement(sql)){
@@ -63,12 +63,12 @@ public abstract class UserAccount {
             int userID = rs.getInt("userID");
             String name = rs.getString("name");
             String storedPassword = rs.getString("password");
-            String role = rs.getString("role");
+            String role = rs.getString("userType");
 
             return switch (role) {
                 case "student" -> new Student(userID, name, email, storedPassword);
                 case "faculty" -> new Faculty(userID, name, email, storedPassword);
-                case "admin" -> new Admin(userID, name, email, storedPassword);
+                case "administrator" -> new Admin(userID, name, email, storedPassword);
                 default -> throw new IllegalArgumentException("Invalid user role");
             };
         }

@@ -8,15 +8,17 @@ public class Faculty extends UserAccount{
     }
 
     public void viewAllHistory(String room){
-        String sql = "SELECT users.name, " + room + ".sessionlogin, " + room + ".sessionlogout FROM " + room +
+        String sql = "SELECT users.name, " + room + ".sessionlogin, " + room + ".sessionlogout, " + room + ".deviceID, " + room + ".deviceType FROM " + room +
                 " JOIN users ON " + room + ".userID = users.userID ORDER BY " + room + "ID DESC";
-        try(PreparedStatement ps = FormConnection.connect().getConnection().prepareStatement(sql)){
+        try(PreparedStatement ps = FormConnection.connectDb().prepareStatement(sql)){
             ResultSet rs = ps.executeQuery();
             while(rs.next()){
                 String name = rs.getString("name");
                 Timestamp loginTime = rs.getTimestamp("sessionlogin");
                 Timestamp logoutTime = rs.getTimestamp("sessionlogout");
-                System.out.println("User: " + name + ", Login: " + loginTime + ", Logout: " + logoutTime);
+                int deviceId = rs.getInt("deviceID");
+                String deviceType = rs.getString("deviceType");
+                System.out.println("User: " + name + ", Device: " + deviceType + " " + deviceId + ", Login: " + loginTime + ", Logout: " + logoutTime);
             }
         } catch (SQLException e) {
             e.printStackTrace();

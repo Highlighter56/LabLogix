@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-import Test.Authenticate;
 import src.users.Admin;
 import src.users.Faculty;
 import src.users.Student;
@@ -50,61 +49,40 @@ public class InteractiveTerminal {
 			}
 		}
 	}
-/* 
-	private void handleLoginLoop() {
+
+	private void handleLoginLoop(){
 		while (true) {
-			System.out.println("\nLogin Flow (type 'back' for email to return):");
-			String email = readLine("Email: ");
-			if ("back".equalsIgnoreCase(email)) {
+			System.out.println("\nLogin Flow (room -> device -> email -> password, type 'back' at room prompt to return):");
+			int roomId = promptRoom();
+			if (roomId == BACK) {
 				return;
 			}
-			String password = readLine("Password: ");
 
-			Authenticate.AuthResult result = Authenticate.authenticate(email, password);
-			if (!result.isAuthenticated()) {
-				System.out.println("Login failed: " + result.getMessage());
-				if (!askRetryOrBack("Retry login? (y = retry, n = main menu): ")) {
+			Device.types type = promptDeviceType(roomId);
+			if (type == null) {
+				continue;
+			}
+
+			List<Integer> availableIds = getAvailableDeviceIds(roomId, type);
+			if (availableIds.isEmpty()) {
+				System.out.println("No available devices found for that room/type.");
+				if (!askRetryOrBack("Try a different room or device type? (y = retry, n = main menu): ")) {
 					return;
 				}
 				continue;
 			}
 
-			UserAccount user = result.getUser();
-			System.out.println("Welcome, " + user.getEmail() + " (" + user.getRole() + ")");
-			showNotificationsPlaceholder(user);
-
-			String role = user.getRole().toLowerCase();
-			if ("student".equals(role)) {
-				studentMenu(user);
-			} else if ("faculty".equals(role)) {
-				facultyMenu(user);
-			} else if ("administrator".equals(role)) {
-				adminMenu(user);
-			} else {
-				System.out.println("Unknown role. Returning to main menu.");
+			Integer deviceId = promptDeviceId(availableIds, "Login");
+			if (deviceId == null) {
+				continue;
 			}
-			return;
-		}
-	}*/
 
-	private void handleLoginLoop(){
-		while(true){
-			System.out.println("\nLogin Flow (type 'back' for email to return):");
 			String email = readLine("Email: ");
 			if ("back".equalsIgnoreCase(email)) {
 				return;
 			}
 			String password = readLine("Password: ");
 
-			//Authenticate.AuthResult result = Authenticate.authenticate(email, password);
-			// if (!result.isAuthenticated()) {
-			// 	System.out.println("Login failed: " + result.getMessage());
-			// 	if (!askRetryOrBack("Retry login? (y = retry, n = main menu): ")) {
-			// 		return;
-			// 	}
-			// 	continue;
-			// }
-			
 			UserAccount user;
 			try {
 				user = UserAccount.login(email, password);
@@ -115,21 +93,29 @@ public class InteractiveTerminal {
 				}
 				continue;
 			}
-			System.out.println("Welcome, " + user.getEmail() + " (" + user.getRole() + ")");
-			showNotificationsPlaceholder(user);
-			int role = user.getRole();
-			if(role == 1){
-				Student userStudent = (Student) user;
-				studentMenu(userStudent);
-			} else if(role == 2){
-				Faculty userFaculty = (Faculty) user;
-				facultyMenu(userFaculty);
-			} else if(role == 3){
-				Admin userAdmin = (Admin) user;
-				adminMenu(userAdmin);
-			} else {
-				System.out.println("Unknown role. Returning to main menu.");
+
+			if (!recordLoginForDevice(user, roomId, deviceId, type)) {
+				if (!askRetryOrBack("Retry login? (y = retry, n = main menu): ")) {
+					return;
+				}
+				continue;
 			}
+
+			System.out.println("Welcome, " + user.getName());
+			int role = user.getRole();
+			if (role == 1) {
+				studentMenu((Student) user);
+				return;
+			} else if (role == 2) {
+				facultyMenu((Faculty) user);
+				return;
+			} else if (role == 3) {
+				adminMenu((Admin) user);
+				return;
+			}
+
+			System.out.println("Unknown role. Returning to main menu.");
+			return;
 		}
 	}
 
@@ -144,7 +130,16 @@ public class InteractiveTerminal {
 				return;
 			}
 
-			UserAccount user = Authenticate.findUserByEmail(email);
+			UserAccount user;
+			try {
+				user = UserAccount.findByEmail(email);
+			} catch (Exception e) {
+				System.out.println("Error looking up user: " + e.getMessage());
+				if (!askRetryOrBack("Retry logout? (y = retry, n = main menu): ")) {
+					return;
+				}
+				continue;
+			}
 			if (user == null) {
 				System.out.println("Unknown email.");
 				if (!askRetryOrBack("Retry logout? (y = retry, n = main menu): ")) {
@@ -153,79 +148,40 @@ public class InteractiveTerminal {
 				continue;
 			}
 
-			if (!hasActiveSession(user.getUserID())) {
-				System.out.println("This user has no active session.");
-				if (!askRetryOrBack("Retry logout? (y = retry, n = main menu): ")) {
-					return;
-				}
-				continue;
-			}
-
 			while (true) {
-				int roomId = promptRoom();
-				if (roomId == BACK) {
-					break;
-				}
-
-				while (true) {
-					Device.types type = promptDeviceType(roomId);
-					if (type == null) {
-						break;
-					}
-
-					List<Integer> availableIds = getAvailableDeviceIds(roomId, type);
-					if (availableIds.isEmpty()) {
-						System.out.println("No matching devices are currently in use in that room/type.");
-						if (!askRetryOrBack("Retry logout? (y = retry, n = back): ")) {
+				System.out.println("Logout options:");
+				System.out.println("1. Logout a specific device");
+				System.out.println("2. Logout all devices");
+				System.out.println("3. Back");
+				int choice = readInt("Choose an option: ");
+				switch (choice) {
+					case 1:
+						if (logoutSpecificDevice(user)) {
 							return;
 						}
-						continue;
-					}
-
-					Integer deviceId = promptDeviceId(availableIds, "Logout");
-					if (deviceId == null) {
-						continue;
-					}
-
-					// !!! Missing session->device linkage in schema means we cannot verify
-					// !!! that this exact device belongs to this exact active user session.
-					Device device = new Device(deviceId, type);
-					OccupancyTracker tracker = new OccupancyTracker(OccupancyTracker.actions.LOGOUT, user);
-					tracker.recordLogout(user, device);
-					System.out.println("Logout attempt recorded. Returning to main menu.");
-					return;
+						break;
+					case 2:
+						logoutAllDevices(user);
+						return;
+					case 3:
+						return;
+					default:
+						System.out.println("Invalid option.");
 				}
 			}
 		}
 	}
 
 	private void studentMenu(UserAccount user) {
-		while (true) {
-			System.out.println("\nStudent Menu:");
-			System.out.println("1. Login to a device");
-			System.out.println("2. Back");
-			int choice = readInt("Choose an option: ");
-			switch (choice) {
-				case 1:
-					if (loginToDevice(user)) {
-						return;
-					}
-					break;
-				case 2:
-					return;
-				default:
-					System.out.println("Invalid option.");
-			}
-		}
+		System.out.println("Student login complete. Returning to main menu.");
 	}
 
 	private void facultyMenu(Faculty user) {
 		while (true) {
 			System.out.println("\nFaculty Menu:");
-			System.out.println("1. Login to a device");
+			System.out.println("1. Login to another device");
 			System.out.println("2. View user history");
-			System.out.println("3. Send notification");
-			System.out.println("4. Back");
+			System.out.println("3. Back");
 			int choice = readInt("Choose an option: ");
 			switch (choice) {
 				case 1:
@@ -234,13 +190,9 @@ public class InteractiveTerminal {
 					}
 					break;
 				case 2:
-					viewUserHistoryPlaceholder();
-					//user.viewAllHistory(null);
+					viewUserHistory(user);
 					break;
 				case 3:
-					sendNotificationPlaceholder();
-					break;
-				case 4:
 					return;
 				default:
 					System.out.println("Invalid option.");
@@ -251,10 +203,10 @@ public class InteractiveTerminal {
 	private void adminMenu(Admin user) {
 		while (true) {
 			System.out.println("\nAdmin Menu:");
-			System.out.println("1. Login to a device");
+			System.out.println("1. Login to another device");
 			System.out.println("2. View user history");
-			System.out.println("3. Send notification");
-			System.out.println("4. Manage devices/labs");
+			System.out.println("3. Manage devices/labs");
+			System.out.println("4. Manage users");
 			System.out.println("5. Back");
 			int choice = readInt("Choose an option: ");
 			switch (choice) {
@@ -264,14 +216,13 @@ public class InteractiveTerminal {
 					}
 					break;
 				case 2:
-					viewUserHistoryPlaceholder();
-					//user.viewAllHistory(null);
+					viewUserHistory(user);
 					break;
 				case 3:
-					sendNotificationPlaceholder();
+					manageDevicesPlaceholder(user);
 					break;
 				case 4:
-					manageDevicesPlaceholder(user);
+					manageUsersMenu(user);
 					break;
 				case 5:
 					return;
@@ -282,11 +233,6 @@ public class InteractiveTerminal {
 	}
 
 	private boolean loginToDevice(UserAccount user) {
-		if (hasActiveSession(user.getUserID())) {
-			System.out.println("One-device rule: user already has an active session.");
-			return false;
-		}
-
 		while (true) {
 			int roomId = promptRoom();
 			if (roomId == BACK) {
@@ -313,12 +259,93 @@ public class InteractiveTerminal {
 					continue;
 				}
 
-				Device device = new Device(deviceId, type);
-				OccupancyTracker tracker = new OccupancyTracker(OccupancyTracker.actions.LOGIN, user);
-				tracker.recordLogin(user, device);
-				System.out.println("Login attempt recorded. Returning to main menu.");
-				return true;
+				if (recordLoginForDevice(user, roomId, deviceId, type)) {
+					System.out.println("Login attempt recorded. Returning to menu.");
+					return true;
+				}
+				return false;
 			}
+		}
+	}
+
+	private void viewUserHistory(UserAccount user) {
+		String roomTable = promptRoomTable();
+		if (roomTable == null) {
+			return;
+		}
+
+		if (user instanceof Faculty faculty) {
+			faculty.viewAllHistory(roomTable);
+			return;
+		}
+
+		if (user instanceof Admin admin) {
+			admin.viewAllHistory(roomTable);
+			return;
+		}
+
+		System.out.println("History lookup is only available for faculty and admin accounts.");
+	}
+
+	private void manageUsersMenu(Admin user) {
+		while (true) {
+			System.out.println("\nManage Users:");
+			System.out.println("1. View all users");
+			System.out.println("2. Create user");
+			System.out.println("3. Change user role");
+			System.out.println("4. Remove user");
+			System.out.println("5. Back");
+			int choice = readInt("Choose an option: ");
+			switch (choice) {
+				case 1:
+					user.viewAllUsers();
+					break;
+				case 2:
+					createUserViaAdmin(user);
+					break;
+				case 3:
+					changeUserRoleViaAdmin(user);
+					break;
+				case 4:
+					removeUserViaAdmin(user);
+					break;
+				case 5:
+					return;
+				default:
+					System.out.println("Invalid option.");
+			}
+		}
+	}
+
+	private void createUserViaAdmin(Admin user) {
+		String name = readLine("Name: ");
+		String email = readLine("Email: ");
+		String password = readLine("Password: ");
+		String role = readLine("Role (student, faculty, admin): ");
+		try {
+			UserAccount createdUser = user.createUserAccount(name, email, password, role);
+			System.out.println("Created user: " + createdUser.getName() + " (" + createdUser.getEmail() + ")");
+		} catch (Exception e) {
+			System.out.println("Error creating user: " + e.getMessage());
+		}
+	}
+
+	private void changeUserRoleViaAdmin(Admin user) {
+		int userId = readInt("User ID: ");
+		String newRole = readLine("New role (student, faculty, admin): ");
+		try {
+			user.changeUserRole(userId, newRole);
+		} catch (Exception e) {
+			System.out.println("Error updating role: " + e.getMessage());
+		}
+	}
+
+	private void removeUserViaAdmin(Admin user) {
+		int userId = readInt("User ID: ");
+		try {
+			user.removeUser(userId);
+		} catch (Exception e) {
+			System.out.println("Error removing user: " + e.getMessage());
 		}
 	}
 
@@ -427,106 +454,223 @@ public class InteractiveTerminal {
 		return ids;
 	}
 
-	private boolean hasActiveSession(int userId) {
-		return hasActiveSessionInRoom("room259", userId) || hasActiveSessionInRoom("room260", userId);
+	private boolean recordLoginForDevice(UserAccount user, int roomId, int deviceId, Device.types type) {
+		String roomTable = roomTableFor(roomId);
+		String deviceTable = deviceTableFor(type);
+		String deviceIdField = deviceIdFieldFor(type);
+		if (roomTable == null || deviceTable == null || deviceIdField == null) {
+			System.out.println("Unable to resolve room or device table for login.");
+			return false;
+		}
+
+		String roomOccupancySql = "SELECT COUNT(*) AS activeCount FROM " + roomTable + " WHERE sessionlogout IS NULL";
+		String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'in_use' WHERE " + deviceIdField + " = ?";
+		String insertSql = "INSERT INTO " + roomTable + " (sessionlogin, sessionlogout, userID, deviceID, deviceType, status, capacity, currentOccupancy) VALUES (NOW(), NULL, ?, ?, ?, ?, ?, ?)";
+
+		try (Connection conn = FormConnection.connectDb()) {
+			conn.setAutoCommit(false);
+			int activeCount = 0;
+			try (PreparedStatement occStmt = conn.prepareStatement(roomOccupancySql); ResultSet rs = occStmt.executeQuery()) {
+				if (rs.next()) {
+					activeCount = rs.getInt("activeCount");
+				}
+			}
+
+			int capacity = roomId == 259 ? 25 : 30;
+			int newOccupancy = activeCount + 1;
+			String roomStatus = newOccupancy >= capacity ? "full" : "open";
+
+			try (PreparedStatement updateDeviceStmt = conn.prepareStatement(updateDeviceSql)) {
+				updateDeviceStmt.setInt(1, deviceId);
+				if (updateDeviceStmt.executeUpdate() == 0) {
+					throw new SQLException("Device not found");
+				}
+			}
+
+			try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+				insertStmt.setInt(1, user.getUserID());
+				insertStmt.setInt(2, deviceId);
+				insertStmt.setString(3, type.name().toLowerCase());
+				insertStmt.setString(4, roomStatus);
+				insertStmt.setInt(5, capacity);
+				insertStmt.setInt(6, newOccupancy);
+				insertStmt.executeUpdate();
+			}
+
+			conn.commit();
+			return true;
+		} catch (Exception e) {
+			System.out.println("Login recording failed: " + e.getMessage());
+			return false;
+		}
 	}
 
-	private boolean hasActiveSessionInRoom(String roomTable, int userId) {
-		String sql = "SELECT 1 FROM " + roomTable + " WHERE userID = ? AND sessionlogout IS NULL LIMIT 1";
+	private boolean logoutSpecificDevice(UserAccount user) {
+		int roomId = promptRoom();
+		if (roomId == BACK) {
+			return false;
+		}
+
+		Device.types type = promptDeviceType(roomId);
+		if (type == null) {
+			return false;
+		}
+
+		List<Integer> activeIds = getActiveDeviceIds(roomId, user.getUserID(), type);
+		if (activeIds.isEmpty()) {
+			System.out.println("No active sessions found for that room/type.");
+			return false;
+		}
+
+		Integer deviceId = promptDeviceId(activeIds, "Logout");
+		if (deviceId == null) {
+			return false;
+		}
+
+		String roomTable = roomTableFor(roomId);
+		String deviceTable = deviceTableFor(type);
+		String deviceIdField = deviceIdFieldFor(type);
+		String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND deviceID = ? AND sessionlogout IS NULL";
+		String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'available' WHERE " + deviceIdField + " = ?";
+
+		try (Connection conn = FormConnection.connectDb()) {
+			conn.setAutoCommit(false);
+			int rows;
+			try (PreparedStatement roomStmt = conn.prepareStatement(updateRoomSql)) {
+				roomStmt.setInt(1, user.getUserID());
+				roomStmt.setInt(2, deviceId);
+				rows = roomStmt.executeUpdate();
+			}
+			if (rows == 0) {
+				System.out.println("No active session found for that device.");
+				conn.rollback();
+				return false;
+			}
+
+			try (PreparedStatement deviceStmt = conn.prepareStatement(updateDeviceSql)) {
+				deviceStmt.setInt(1, deviceId);
+				deviceStmt.executeUpdate();
+			}
+
+			conn.commit();
+			System.out.println("Logged out device " + deviceId + " from " + roomTable + ".");
+			return true;
+		} catch (Exception e) {
+			System.out.println("Logout failed: " + e.getMessage());
+			return false;
+		}
+	}
+
+	private void logoutAllDevices(UserAccount user) {
+		int totalRows = 0;
+		try (Connection conn = FormConnection.connectDb()) {
+			conn.setAutoCommit(false);
+			totalRows += logoutAllDevicesInRoom(conn, user.getUserID(), 259);
+			totalRows += logoutAllDevicesInRoom(conn, user.getUserID(), 260);
+			conn.commit();
+			if (totalRows == 0) {
+				System.out.println("No active sessions found for that user.");
+			} else {
+				System.out.println("Logged out all active devices for " + user.getEmail() + ".");
+			}
+		} catch (Exception e) {
+			System.out.println("Logout all failed: " + e.getMessage());
+		}
+	}
+
+	private int logoutAllDevicesInRoom(Connection conn, int userId, int roomId) throws Exception {
+		String roomTable = roomTableFor(roomId);
+		String selectSql = "SELECT deviceID, deviceType FROM " + roomTable + " WHERE userID = ? AND sessionlogout IS NULL";
+		int updated = 0;
+		try (PreparedStatement selectStmt = conn.prepareStatement(selectSql)) {
+			selectStmt.setInt(1, userId);
+			try (ResultSet rs = selectStmt.executeQuery()) {
+				while (rs.next()) {
+					int deviceId = rs.getInt("deviceID");
+					String deviceType = rs.getString("deviceType");
+					String deviceTable = deviceTableFor(deviceType);
+					String deviceIdField = deviceIdFieldFor(deviceType);
+					String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND deviceID = ? AND sessionlogout IS NULL";
+					String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'available' WHERE " + deviceIdField + " = ?";
+					try (PreparedStatement roomStmt = conn.prepareStatement(updateRoomSql); PreparedStatement deviceStmt = conn.prepareStatement(updateDeviceSql)) {
+						roomStmt.setInt(1, userId);
+						roomStmt.setInt(2, deviceId);
+						updated += roomStmt.executeUpdate();
+						deviceStmt.setInt(1, deviceId);
+						deviceStmt.executeUpdate();
+					}
+				}
+			}
+		}
+		return updated;
+	}
+
+	private List<Integer> getActiveDeviceIds(int roomId, int userId, Device.types type) {
+		List<Integer> ids = new ArrayList<>();
+		String roomTable = roomTableFor(roomId);
+		String sql = "SELECT deviceID FROM " + roomTable + " WHERE userID = ? AND deviceType = ? AND sessionlogout IS NULL";
 		try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 			stmt.setInt(1, userId);
+			stmt.setString(2, type.name().toLowerCase());
 			try (ResultSet rs = stmt.executeQuery()) {
-				return rs.next();
-			}
-		} catch (Exception e) {
-			System.out.println("Error checking active session in " + roomTable + ": " + e.getMessage());
-			return false;
-		}
-	}
-
-	private boolean deviceExists(int deviceId, Device.types type) {
-		String tableName;
-		String idField;
-		switch (type) {
-			case COMPUTER:
-				tableName = "pc";
-				idField = "pcID";
-				break;
-			case PRINTER:
-				tableName = "printer";
-				idField = "printerID";
-				break;
-			case PRINTER3D:
-				tableName = "printer3d";
-				idField = "printer3dID";
-				break;
-			default:
-				return false;
-		}
-
-		String sql = "SELECT 1 FROM " + tableName + " WHERE " + idField + " = ? LIMIT 1";
-		try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setInt(1, deviceId);
-			try (ResultSet rs = stmt.executeQuery()) {
-				return rs.next();
-			}
-		} catch (Exception e) {
-			System.out.println("Error validating device: " + e.getMessage());
-			return false;
-		}
-	}
-
-	private boolean isDeviceAvailable(int deviceId, Device.types type) {
-		String tableName;
-		String idField;
-		switch (type) {
-			case COMPUTER:
-				tableName = "pc";
-				idField = "pcID";
-				break;
-			case PRINTER:
-				tableName = "printer";
-				idField = "printerID";
-				break;
-			case PRINTER3D:
-				tableName = "printer3d";
-				idField = "printer3dID";
-				break;
-			default:
-				return false;
-		}
-
-		String sql = "SELECT status FROM " + tableName + " WHERE " + idField + " = ?";
-		try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setInt(1, deviceId);
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
-					return "available".equalsIgnoreCase(rs.getString("status"));
+				while (rs.next()) {
+					ids.add(rs.getInt("deviceID"));
 				}
 			}
 		} catch (Exception e) {
-			System.out.println("Error reading device status: " + e.getMessage());
+			System.out.println("Error reading active devices: " + e.getMessage());
 		}
-		return false;
+		return ids;
 	}
 
-	private void showNotificationsPlaceholder(UserAccount user) {
-		System.out.println("Notifications for " + user.getEmail() + ":");
-		// !!! Pending notifications table: notificationID, userID, category, message, seen, seenAt, createdAt
-		System.out.println("(No notifications feature yet - pending schema update)");
+	private String roomTableFor(int roomId) {
+		if (roomId == 259) {
+			return "room259";
+		}
+		if (roomId == 260) {
+			return "room260";
+		}
+		return null;
 	}
 
-	private void viewUserHistoryPlaceholder() {
-		String email = readLine("Enter email to view history: ");
-		// !!! Pending dedicated session/device tracking table for accurate per-user history.
-		System.out.println("History lookup for '" + email + "' is pending schema support.");
+	private String promptRoomTable() {
+		while (true) {
+			System.out.println("\nSelect Room Table:");
+			System.out.println("1. room259");
+			System.out.println("2. room260");
+			System.out.println("3. Back");
+			int choice = readInt("Choose an option: ");
+			if (choice == 1) {
+				return "room259";
+			}
+			if (choice == 2) {
+				return "room260";
+			}
+			if (choice == 3) {
+				return null;
+			}
+			System.out.println("Invalid option.");
+		}
 	}
 
-	private void sendNotificationPlaceholder() {
-		String targetEmail = readLine("Enter target email: ");
-		String message = readLine("Enter notification message: ");
-		// !!! Pending notifications table + sender tracking.
-		System.out.println("Notification queued in simulation only for " + targetEmail + ": " + message);
+	private String deviceTableFor(Object typeValue) {
+		String type = typeValue.toString().toLowerCase();
+		return switch (type) {
+			case "computer" -> "pc";
+			case "printer" -> "printer";
+			case "printer3d" -> "printer3d";
+			default -> null;
+		};
+	}
+
+	private String deviceIdFieldFor(Object typeValue) {
+		String type = typeValue.toString().toLowerCase();
+		return switch (type) {
+			case "computer" -> "pcID";
+			case "printer" -> "printerID";
+			case "printer3d" -> "printer3dID";
+			default -> null;
+		};
 	}
 
 	private void manageDevicesPlaceholder(Admin userAdmin) {
@@ -558,28 +702,6 @@ public class InteractiveTerminal {
 			}
 		}
 	}
-//Moved function to admin class
-	// private void showLoggedInUsers() {
-	// 	String sql = "SELECT u.email, u.name, 'room259' AS room, r.sessionlogin " +
-	// 			"FROM room259 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
-	// 			"UNION ALL " +
-	// 			"SELECT u.email, u.name, 'room260' AS room, r.sessionlogin " +
-	// 			"FROM room260 r JOIN users u ON u.userID = r.userID WHERE r.sessionlogout IS NULL " +
-	// 			"ORDER BY room, sessionlogin";
-	// 	try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-	// 		System.out.println("\nUsers currently logged into devices:");
-	// 		boolean found = false;
-	// 		while (rs.next()) {
-	// 			found = true;
-	// 			System.out.println("- " + rs.getString("email") + " (" + rs.getString("name") + ") in " + rs.getString("room") + " since " + rs.getString("sessionlogin"));
-	// 		}
-	// 		if (!found) {
-	// 			System.out.println("No active sessions.");
-	// 		}
-	// 	} catch (Exception e) {
-	// 		System.out.println("Error reading active sessions: " + e.getMessage());
-	// 	}
-	// }
 
 	private void setDeviceStatusForAdmin(String targetStatus) {
 		while (true) {
