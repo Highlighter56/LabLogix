@@ -3,6 +3,7 @@ package src;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -468,6 +469,8 @@ public class InteractiveTerminal {
 		String insertSql = "INSERT INTO " + roomTable + " (sessionlogin, sessionlogout, userID, deviceID, deviceType, status, capacity, currentOccupancy) VALUES (NOW(), NULL, ?, ?, ?, ?, ?, ?)";
 
 		try (Connection conn = FormConnection.connectDb()) {
+			// ensure schema has device columns (some DBs may be missing them)
+			ensureRoomHasDeviceColumns(roomTable, conn);
 			conn.setAutoCommit(false);
 			int activeCount = 0;
 			try (PreparedStatement occStmt = conn.prepareStatement(roomOccupancySql); ResultSet rs = occStmt.executeQuery()) {
@@ -502,6 +505,22 @@ public class InteractiveTerminal {
 		} catch (Exception e) {
 			System.out.println("Login recording failed: " + e.getMessage());
 			return false;
+		}
+	}
+
+	private void ensureRoomHasDeviceColumns(String roomTable, Connection conn) {
+		String checkSql = "SHOW COLUMNS FROM " + roomTable + " LIKE 'deviceID'";
+		try (PreparedStatement ps = conn.prepareStatement(checkSql); ResultSet rs = ps.executeQuery()) {
+			if (!rs.next()) {
+				String alter = "ALTER TABLE " + roomTable + " ADD COLUMN deviceID INT NULL, ADD COLUMN deviceType VARCHAR(32) NULL";
+				try (PreparedStatement alterStmt = conn.prepareStatement(alter)) {
+					alterStmt.executeUpdate();
+					System.out.println("Patched " + roomTable + " schema: added deviceID/deviceType columns.");
+				}
+			}
+		} catch (Exception e) {
+			// Non-fatal: schema alteration failed or not permitted; caller will handle failures.
+			System.out.println("Schema check/alter failed for " + roomTable + ": " + e.getMessage());
 		}
 	}
 

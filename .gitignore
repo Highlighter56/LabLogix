@@ -8,6 +8,3 @@ out/
 
 # Node dependencies
 website/node_modules/
-
-# Local scripts
-scripts/local/

@@ -45,6 +45,11 @@ public class NotificationService {
     }
 
     public void stop() {
+        try {
+            poller.stop();
+        } catch (Exception e) {
+            // ignore
+        }
         if (pollerThread != null) {
             pollerThread.interrupt();
         }
