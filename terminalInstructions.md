@@ -40,6 +40,11 @@ If you already have this, skip it
 
 download the connector, and put the connector in the lib folder. Use this command to check that the connector has the correct name.
 
+[MySQL Downloads Website](https://dev.mysql.com/downloads/connector/j/): Select Platform Independent, you can download either one of the archives.
+
+Download it, unzip it, and drag the connector into the lib folder you created
+
+
     ls lib
 
 If what you have is differen't from what is connected, change it to make it match. I ran this because mine was **7** instead of **6**. Only run this line if the connector is named incorrectly
