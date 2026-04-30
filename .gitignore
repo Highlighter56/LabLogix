@@ -1,6 +1,7 @@
 .env
 Test*
 lib
+lib.zip
 
 # Java build artifacts
 *.class

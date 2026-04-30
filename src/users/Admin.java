@@ -38,6 +38,7 @@ public class Admin extends UserAccount{
     public void removeUser(int targetUserID){
         try (Connection conn = FormConnection.connectDb()) {
             conn.setAutoCommit(false);
+            // Clear device associations
             try (PreparedStatement ps1 = conn.prepareStatement("UPDATE pc SET userID = NULL WHERE userID = ?")) {
                 ps1.setInt(1, targetUserID);
                 ps1.executeUpdate();
@@ -50,14 +51,16 @@ public class Admin extends UserAccount{
                 ps3.setInt(1, targetUserID);
                 ps3.executeUpdate();
             }
-            try (PreparedStatement ps4 = conn.prepareStatement("UPDATE room259 SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND sessionlogout IS NULL")) {
+            // Clear room associations (both active and historical) to break FK constraints
+            try (PreparedStatement ps4 = conn.prepareStatement("UPDATE room259 SET userID = NULL WHERE userID = ?")) {
                 ps4.setInt(1, targetUserID);
                 ps4.executeUpdate();
             }
-            try (PreparedStatement ps5 = conn.prepareStatement("UPDATE room260 SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND sessionlogout IS NULL")) {
+            try (PreparedStatement ps5 = conn.prepareStatement("UPDATE room260 SET userID = NULL WHERE userID = ?")) {
                 ps5.setInt(1, targetUserID);
                 ps5.executeUpdate();
             }
+            // Delete the user
             try (PreparedStatement del = conn.prepareStatement("DELETE FROM users WHERE userID = ?")) {
                 del.setInt(1, targetUserID);
                 int rows = del.executeUpdate();
