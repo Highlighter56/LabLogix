@@ -30,11 +30,11 @@ Else, go to Step 4
 
 If you already have this, skip it
 
-    DB_HOST=localhost
-    DB_PORT=3306
-    DB_USER=root
-    DB_PASSWORD="your_mysql_password"
-    DB_NAME=lablogix
+    DB_HOST = localhost
+    DB_PORT = 3306
+    DB_USER = root
+    DB_PASSWORD = "your_mysql_password"
+    DB_NAME = lablogix
 
 ### 4. Add the MySQL connector, and fix the file name
 
