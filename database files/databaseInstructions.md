@@ -1,4 +1,4 @@
-# Database Instructions for first-time users
+# Database Instructions
 There are several MySQL Files created for the database 
 
 ## Run the MySQL Files in this order:
