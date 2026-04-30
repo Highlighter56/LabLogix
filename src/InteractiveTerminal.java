@@ -149,6 +149,12 @@ public class InteractiveTerminal {
 				continue;
 			}
 
+			// check if user has any active sessions first
+			if (!userHasActiveSessions(user.getUserID())) {
+				System.out.println("User " + user.getEmail() + " has no active sessions.");
+				return;
+			}
+
 			while (true) {
 				System.out.println("Logout options:");
 				System.out.println("1. Logout a specific device");
@@ -173,6 +179,35 @@ public class InteractiveTerminal {
 		}
 	}
 
+	private boolean userHasActiveSessions(int userId) {
+		String sqlPc = "SELECT 1 FROM pc WHERE userID = ? LIMIT 1";
+		String sqlPrinter = "SELECT 1 FROM printer WHERE userID = ? LIMIT 1";
+		String sqlP3d = "SELECT 1 FROM printer3d WHERE userID = ? LIMIT 1";
+		try (Connection conn = FormConnection.connectDb()) {
+			try (PreparedStatement ps = conn.prepareStatement(sqlPc)) {
+				ps.setInt(1, userId);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) return true;
+				}
+			}
+			try (PreparedStatement ps = conn.prepareStatement(sqlPrinter)) {
+				ps.setInt(1, userId);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) return true;
+				}
+			}
+			try (PreparedStatement ps = conn.prepareStatement(sqlP3d)) {
+				ps.setInt(1, userId);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) return true;
+				}
+			}
+		} catch (Exception e) {
+			System.out.println("Error checking active sessions: " + e.getMessage());
+		}
+		return false;
+	}
+
 	private void studentMenu(UserAccount user) {
 		System.out.println("Student login complete. Returning to main menu.");
 	}
@@ -181,7 +216,7 @@ public class InteractiveTerminal {
 		while (true) {
 			System.out.println("\nFaculty Menu:");
 			System.out.println("1. Login to another device");
-			System.out.println("2. View user history");
+			System.out.println("2. View all history for a room");
 			System.out.println("3. Back");
 			int choice = readInt("Choose an option: ");
 			switch (choice) {
@@ -205,7 +240,7 @@ public class InteractiveTerminal {
 		while (true) {
 			System.out.println("\nAdmin Menu:");
 			System.out.println("1. Login to another device");
-			System.out.println("2. View user history");
+			System.out.println("2. View all history for a room");
 			System.out.println("3. Manage devices/labs");
 			System.out.println("4. Manage users");
 			System.out.println("5. Back");
@@ -322,7 +357,20 @@ public class InteractiveTerminal {
 		String name = readLine("Name: ");
 		String email = readLine("Email: ");
 		String password = readLine("Password: ");
-		String role = readLine("Role (student, faculty, admin): ");
+		String role = null;
+		while (role == null) {
+			System.out.println("Select role:");
+			System.out.println("1. student");
+			System.out.println("2. faculty");
+			System.out.println("3. admin");
+			int r = readInt("Choose 1-3: ");
+			switch (r) {
+				case 1 -> role = "student";
+				case 2 -> role = "faculty";
+				case 3 -> role = "admin";
+				default -> System.out.println("Invalid choice.");
+			}
+		}
 		try {
 			UserAccount createdUser = user.createUserAccount(name, email, password, role);
 			System.out.println("Created user: " + createdUser.getName() + " (" + createdUser.getEmail() + ")");
@@ -333,7 +381,20 @@ public class InteractiveTerminal {
 
 	private void changeUserRoleViaAdmin(Admin user) {
 		int userId = readInt("User ID: ");
-		String newRole = readLine("New role (student, faculty, admin): ");
+		String newRole = null;
+		while (newRole == null) {
+			System.out.println("Select new role:");
+			System.out.println("1. student");
+			System.out.println("2. faculty");
+			System.out.println("3. admin");
+			int r = readInt("Choose 1-3: ");
+			switch (r) {
+				case 1 -> newRole = "student";
+				case 2 -> newRole = "faculty";
+				case 3 -> newRole = "admin";
+				default -> System.out.println("Invalid choice.");
+			}
+		}
 		try {
 			user.changeUserRole(userId, newRole);
 		} catch (Exception e) {
@@ -465,12 +526,10 @@ public class InteractiveTerminal {
 		}
 
 		String roomOccupancySql = "SELECT COUNT(*) AS activeCount FROM " + roomTable + " WHERE sessionlogout IS NULL";
-		String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'in_use' WHERE " + deviceIdField + " = ?";
-		String insertSql = "INSERT INTO " + roomTable + " (sessionlogin, sessionlogout, userID, deviceID, deviceType, status, capacity, currentOccupancy) VALUES (NOW(), NULL, ?, ?, ?, ?, ?, ?)";
+		String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'in_use', userID = ? WHERE " + deviceIdField + " = ?";
+		String insertSql = "INSERT INTO " + roomTable + " (sessionlogin, sessionlogout, userID, status, capacity, currentOccupancy) VALUES (NOW(), NULL, ?, ?, ?, ?)";
 
 		try (Connection conn = FormConnection.connectDb()) {
-			// ensure schema has device columns (some DBs may be missing them)
-			ensureRoomHasDeviceColumns(roomTable, conn);
 			conn.setAutoCommit(false);
 			int activeCount = 0;
 			try (PreparedStatement occStmt = conn.prepareStatement(roomOccupancySql); ResultSet rs = occStmt.executeQuery()) {
@@ -484,7 +543,8 @@ public class InteractiveTerminal {
 			String roomStatus = newOccupancy >= capacity ? "full" : "open";
 
 			try (PreparedStatement updateDeviceStmt = conn.prepareStatement(updateDeviceSql)) {
-				updateDeviceStmt.setInt(1, deviceId);
+				updateDeviceStmt.setInt(1, user.getUserID());
+				updateDeviceStmt.setInt(2, deviceId);
 				if (updateDeviceStmt.executeUpdate() == 0) {
 					throw new SQLException("Device not found");
 				}
@@ -492,11 +552,9 @@ public class InteractiveTerminal {
 
 			try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
 				insertStmt.setInt(1, user.getUserID());
-				insertStmt.setInt(2, deviceId);
-				insertStmt.setString(3, type.name().toLowerCase());
-				insertStmt.setString(4, roomStatus);
-				insertStmt.setInt(5, capacity);
-				insertStmt.setInt(6, newOccupancy);
+				insertStmt.setString(2, roomStatus);
+				insertStmt.setInt(3, capacity);
+				insertStmt.setInt(4, newOccupancy);
 				insertStmt.executeUpdate();
 			}
 
@@ -508,21 +566,6 @@ public class InteractiveTerminal {
 		}
 	}
 
-	private void ensureRoomHasDeviceColumns(String roomTable, Connection conn) {
-		String checkSql = "SHOW COLUMNS FROM " + roomTable + " LIKE 'deviceID'";
-		try (PreparedStatement ps = conn.prepareStatement(checkSql); ResultSet rs = ps.executeQuery()) {
-			if (!rs.next()) {
-				String alter = "ALTER TABLE " + roomTable + " ADD COLUMN deviceID INT NULL, ADD COLUMN deviceType VARCHAR(32) NULL";
-				try (PreparedStatement alterStmt = conn.prepareStatement(alter)) {
-					alterStmt.executeUpdate();
-					System.out.println("Patched " + roomTable + " schema: added deviceID/deviceType columns.");
-				}
-			}
-		} catch (Exception e) {
-			// Non-fatal: schema alteration failed or not permitted; caller will handle failures.
-			System.out.println("Schema check/alter failed for " + roomTable + ": " + e.getMessage());
-		}
-	}
 
 	private boolean logoutSpecificDevice(UserAccount user) {
 		int roomId = promptRoom();
@@ -549,15 +592,14 @@ public class InteractiveTerminal {
 		String roomTable = roomTableFor(roomId);
 		String deviceTable = deviceTableFor(type);
 		String deviceIdField = deviceIdFieldFor(type);
-		String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND deviceID = ? AND sessionlogout IS NULL";
-		String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'available' WHERE " + deviceIdField + " = ?";
+		String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND sessionlogout IS NULL";
+		String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'available', userID = NULL WHERE " + deviceIdField + " = ?";
 
 		try (Connection conn = FormConnection.connectDb()) {
 			conn.setAutoCommit(false);
 			int rows;
 			try (PreparedStatement roomStmt = conn.prepareStatement(updateRoomSql)) {
 				roomStmt.setInt(1, user.getUserID());
-				roomStmt.setInt(2, deviceId);
 				rows = roomStmt.executeUpdate();
 			}
 			if (rows == 0) {
@@ -599,24 +641,65 @@ public class InteractiveTerminal {
 
 	private int logoutAllDevicesInRoom(Connection conn, int userId, int roomId) throws Exception {
 		String roomTable = roomTableFor(roomId);
-		String selectSql = "SELECT deviceID, deviceType FROM " + roomTable + " WHERE userID = ? AND sessionlogout IS NULL";
+		String roomField = roomId == 259 ? "room259ID" : "room260ID";
 		int updated = 0;
-		try (PreparedStatement selectStmt = conn.prepareStatement(selectSql)) {
-			selectStmt.setInt(1, userId);
-			try (ResultSet rs = selectStmt.executeQuery()) {
+
+		// Logout from pc table
+		String pcSql = "SELECT pcID FROM pc WHERE userID = ? AND " + roomField + " IS NOT NULL";
+		try (PreparedStatement pcStmt = conn.prepareStatement(pcSql)) {
+			pcStmt.setInt(1, userId);
+			try (ResultSet rs = pcStmt.executeQuery()) {
 				while (rs.next()) {
-					int deviceId = rs.getInt("deviceID");
-					String deviceType = rs.getString("deviceType");
-					String deviceTable = deviceTableFor(deviceType);
-					String deviceIdField = deviceIdFieldFor(deviceType);
-					String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND deviceID = ? AND sessionlogout IS NULL";
-					String updateDeviceSql = "UPDATE " + deviceTable + " SET status = 'available' WHERE " + deviceIdField + " = ?";
+					int deviceId = rs.getInt("pcID");
+					String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND sessionlogout IS NULL";
+					String updateDeviceSql = "UPDATE pc SET status = 'available', userID = NULL WHERE pcID = ?";
 					try (PreparedStatement roomStmt = conn.prepareStatement(updateRoomSql); PreparedStatement deviceStmt = conn.prepareStatement(updateDeviceSql)) {
 						roomStmt.setInt(1, userId);
-						roomStmt.setInt(2, deviceId);
 						updated += roomStmt.executeUpdate();
 						deviceStmt.setInt(1, deviceId);
 						deviceStmt.executeUpdate();
+					}
+				}
+			}
+		}
+
+		// Logout from printer table (room259 only)
+		if (roomId == 259) {
+			String printerSql = "SELECT printerID FROM printer WHERE userID = ? AND room259ID IS NOT NULL";
+			try (PreparedStatement printerStmt = conn.prepareStatement(printerSql)) {
+				printerStmt.setInt(1, userId);
+				try (ResultSet rs = printerStmt.executeQuery()) {
+					while (rs.next()) {
+						int deviceId = rs.getInt("printerID");
+						String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND sessionlogout IS NULL";
+						String updateDeviceSql = "UPDATE printer SET status = 'available', userID = NULL WHERE printerID = ?";
+						try (PreparedStatement roomStmt = conn.prepareStatement(updateRoomSql); PreparedStatement deviceStmt = conn.prepareStatement(updateDeviceSql)) {
+							roomStmt.setInt(1, userId);
+							updated += roomStmt.executeUpdate();
+							deviceStmt.setInt(1, deviceId);
+							deviceStmt.executeUpdate();
+						}
+					}
+				}
+			}
+		}
+
+		// Logout from printer3d table (room260 only)
+		if (roomId == 260) {
+			String printer3dSql = "SELECT printer3dID FROM printer3d WHERE userID = ? AND room260ID IS NOT NULL";
+			try (PreparedStatement printer3dStmt = conn.prepareStatement(printer3dSql)) {
+				printer3dStmt.setInt(1, userId);
+				try (ResultSet rs = printer3dStmt.executeQuery()) {
+					while (rs.next()) {
+						int deviceId = rs.getInt("printer3dID");
+						String updateRoomSql = "UPDATE " + roomTable + " SET sessionlogout = NOW(), currentOccupancy = GREATEST(currentOccupancy - 1, 0) WHERE userID = ? AND sessionlogout IS NULL";
+						String updateDeviceSql = "UPDATE printer3d SET status = 'available', userID = NULL WHERE printer3dID = ?";
+						try (PreparedStatement roomStmt = conn.prepareStatement(updateRoomSql); PreparedStatement deviceStmt = conn.prepareStatement(updateDeviceSql)) {
+							roomStmt.setInt(1, userId);
+							updated += roomStmt.executeUpdate();
+							deviceStmt.setInt(1, deviceId);
+							deviceStmt.executeUpdate();
+						}
 					}
 				}
 			}
@@ -626,14 +709,15 @@ public class InteractiveTerminal {
 
 	private List<Integer> getActiveDeviceIds(int roomId, int userId, Device.types type) {
 		List<Integer> ids = new ArrayList<>();
-		String roomTable = roomTableFor(roomId);
-		String sql = "SELECT deviceID FROM " + roomTable + " WHERE userID = ? AND deviceType = ? AND sessionlogout IS NULL";
+		String deviceTable = deviceTableFor(type);
+		String deviceIdField = deviceIdFieldFor(type);
+		String roomField = roomId == 259 ? "room259ID" : "room260ID";
+		String sql = "SELECT " + deviceIdField + " FROM " + deviceTable + " WHERE userID = ? AND " + roomField + " IS NOT NULL";
 		try (Connection conn = FormConnection.connectDb(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 			stmt.setInt(1, userId);
-			stmt.setString(2, type.name().toLowerCase());
 			try (ResultSet rs = stmt.executeQuery()) {
 				while (rs.next()) {
-					ids.add(rs.getInt("deviceID"));
+					ids.add(rs.getInt(deviceIdField));
 				}
 			}
 		} catch (Exception e) {

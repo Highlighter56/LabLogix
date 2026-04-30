@@ -19,15 +19,19 @@ public class SchemaPatcher {
     }
 
     private static void patchRoom(Connection conn, String table) throws Exception {
+        // No longer adding deviceID/deviceType to room tables. Ensure device tables contain userID column instead.
         DatabaseMetaData md = conn.getMetaData();
-        try (ResultSet rs = md.getColumns(null, null, table, "deviceID")) {
-            if (!rs.next()) {
-                System.out.println("Adding deviceID/deviceType to " + table);
-                try (Statement s = conn.createStatement()) {
-                    s.executeUpdate("ALTER TABLE " + table + " ADD COLUMN deviceID INT NULL, ADD COLUMN deviceType VARCHAR(32) NULL");
+        String[] deviceTables = {"pc", "printer", "printer3d"};
+        for (String dev : deviceTables) {
+            try (ResultSet rs = md.getColumns(null, null, dev, "userID")) {
+                if (!rs.next()) {
+                    System.out.println("Adding userID to device table: " + dev);
+                    try (Statement s = conn.createStatement()) {
+                        s.executeUpdate("ALTER TABLE " + dev + " ADD COLUMN userID INT NULL");
+                    }
+                } else {
+                    System.out.println(dev + " already has userID column");
                 }
-            } else {
-                System.out.println(table + " already has deviceID column");
             }
         }
     }
