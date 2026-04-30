@@ -1,4 +1,3 @@
--- test data
 use labLogix;
 
 -- users table
@@ -13,12 +12,12 @@ insert into users (name, email, password, userType) values
 insert into room260 (sessionlogin, sessionlogout, userID, status, capacity, currentOccupancy) values
 	(NOW(), NULL, 
 		(select userID from users where email = 'johnsona1@testemail.com'),
-		'open', 30, 12), -- we can edit this line eventually to have it pull from the website instead of beind hard coded, but this is temporary
+		'open', 15, 12), -- we can edit this line eventually to have it pull from the website instead of beind hard coded, but this is temporary
 	(NOW(), NULL, 
 		(select userID from users where email = 'leeb72@testemail.com'),
-		'full', 30, 30), 
+		'full', 15, 30), 
 	(NOW(), NOW(), (select userID from users where email = 'kimc12@testemail.com'),
-    'closed', 30, 0);
+    'closed', 15, 0);
 
 insert into room259 (sessionlogin, sessionlogout, userID, status, capacity, currentOccupancy) values
 (NOW(), NULL, 
