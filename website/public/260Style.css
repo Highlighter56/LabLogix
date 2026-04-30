@@ -7,7 +7,7 @@ body {
 h1 {
     text-align: center;
     position: relative;
-    z-index: 1;
+    z-index: 10;
     margin: 0;
     padding: 0;
 }
@@ -16,19 +16,20 @@ h2 {
     text-align: center;
     font-size: 30px;
 }
+
 .form-box {
     border: 10px solid #2a2a2a;
     border-radius: 20px;
     padding: 20px;
-    width: 1100px;
+    width: 1000px;
     height: 800px;
     margin: 0 auto;
-    background-color: #16216bf7;
+    background-color: #1f2c81f7;
     position: absolute;
     z-index: 10;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.892);
     top: 20%;
-    left: 15%;
+    left: 18%;
     color: antiquewhite;
     font-family: 'Courier New', Courier, monospace;
 }

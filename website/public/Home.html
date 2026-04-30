@@ -6,18 +6,22 @@
     <title>Home</title>
     <link rel="stylesheet" href="homeStyle.css">
 </head>
+
 <body class="homePage">
 
-    <img src="../images/newpaltzlogo.jpg" alt="New Paltz logo">
+    <img src="../images/newpaltzlogo.jpg" alt="New Paltz logo" class="logo">
+
+    <div class="roomImages">
+        <img src="../images/room260.jpeg" alt="room260" class="clickable-img active">
+        <img src="../images/room259.jpeg" alt="room259" class="clickable-img">
+    </div>
     
-    <h1>LabLogix</h1>
+    <h1>LABLOGIX</h1>
 
     <nav>
         <a href="/room260">Room 260</a>
         <a href="/room259">Room 259</a>
     </nav>
-
-    <hr>
 
     <div class="description">
         <p>
@@ -41,5 +45,19 @@
     <footer>
         <h4>Developers: Fabjona Stoja, Michelle Vool, Jenn Zhang, Patrick Hughes</h4>
     </footer>
+
+    <script>
+        const images = document.querySelectorAll('.clickable-img');
+        let current = 0;
+
+        images.forEach(img => {
+            img.addEventListener('click', () => {
+                images[current].classList.remove('active');
+                current = (current + 1) % images.length;
+                images[current].classList.add('active');
+            });
+        });
+    </script>
+
 </body>
 </html>
