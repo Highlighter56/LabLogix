@@ -1,0 +1,119 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 0;
+}
+
+h2 {
+    text-align: center;
+    font-size: 30px;
+}
+
+.form-box {
+    border: 10px solid #2a2a2a;
+    border-radius: 20px;
+    padding: 20px;
+    width: 1000px;
+    height: 800px;
+    margin: 0 auto;
+    background-color: #1f2c81f7;
+    position: absolute;
+    z-index: 10;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.892);
+    top: 20%;
+    left: 19%;
+    color: antiquewhite;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.form-box::after {
+    content: '';
+    display: block;
+    width: 200px;
+    height: 20px;
+    background-color: #2a2a2a;
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translate(-50%);
+    border-radius: 0 0 8px 8px;
+}
+
+.form-box::before {
+    content: '';
+    display: block;
+    width: 300px;
+    height: 12px;
+    background-color: #1a1a1a;
+    position: absolute;
+    bottom: -44px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 4px;
+}
+
+.buttons {
+    display: flex;
+    border: 2px solid #ddbbbb;
+    border-radius: 20px;
+    overflow: hidden;
+    width: fit-content;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.buttons button {
+    padding: 8px 20px;
+    border: none;
+    border-right: 1px solid #ddbbbb;
+    background-color: white;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.buttons button:last-child {
+    border-right: end;
+}
+
+.buttons button:hover {
+    background-color: rgb(185, 196, 217);
+}
+
+img {
+    opacity: 0.3;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    align-items: center;
+    width: 100%;
+}
+
+.columns {
+    display: flex;
+    gap: 400px;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+.left-column {
+    flex: 1;
+    text-align: left;
+    margin-top: 70px;
+}
+
+.right-column {
+    flex: 1;
+}
+
+.chart-wrapper {
+    color: rgb(255, 255, 255);
+    height: 400px;
+    width: 800px;
+}

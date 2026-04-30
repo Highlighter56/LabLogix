@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="homeStyle.css">
+</head>
+
+<body class="homePage">
+
+    <img src="../images/newpaltzlogo.jpg" alt="New Paltz logo" class="logo">
+
+    <div class="roomImages">
+        <img src="../images/room260.jpeg" alt="room260" class="clickable-img active">
+        <img src="../images/room259.jpeg" alt="room259" class="clickable-img">
+    </div>
+    
+    <h1>LABLOGIX</h1>
+
+    <nav>
+        <a href="/room260">Room 260</a>
+        <a href="/room259">Room 259</a>
+    </nav>
+
+    <div class="description">
+        <p>
+            LabLogix is a real-time tracking app built for Computer Science students who want to
+            make the most of their time. Our university labs are packed powerful resources, like
+            high-performance computers, 3D printers, and more. Students are currently underutilizing
+            free resources as a result of not having information.
+        </p>
+        <p>
+            LabLogix solves that problem by giving you a live view of open seats, current occupancy, 
+            and device availability across all lab rooms. Whether you need a quick workstation, or
+            planning a longer study session and want to know the best time to come in, LabLogix 
+            gives you the information you need.
+        </p>
+        <p>
+            LabLogix puts the lab in the palm of your hand, so you can focus less on finding a spot
+            and more on getting things done.
+        </p>
+    </div>
+
+    <footer>
+        <h4>Developers: Fabjona Stoja, Michelle Vool, Jenn Zhang, Patrick Hughes</h4>
+    </footer>
+
+    <script>
+        const images = document.querySelectorAll('.clickable-img');
+        let current = 0;
+
+        images.forEach(img => {
+            img.addEventListener('click', () => {
+                images[current].classList.remove('active');
+                current = (current + 1) % images.length;
+                images[current].classList.add('active');
+            });
+        });
+    </script>
+
+</body>
+</html>

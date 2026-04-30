@@ -7,9 +7,10 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/Room260.html');
+    res.sendFile(__dirname + '/public/Home.html');
 });
 
 app.get('/room260', (req, res) => {
@@ -20,12 +21,20 @@ app.get('/room259', (req, res) => {
     res.sendFile(__dirname + '/public/Room259.html');
 });
 
-app.get('/usagehistory', (req, res) => {
-    res.sendFile(__dirname + '/public/UsageHistory.html');
+app.get('/home', (req, res) => {
+    res.sendFile(__dirname + '/public/Home.html');
 });
 
-app.get('/style.css', (req, res) => {
-    res.sendFile(__dirname + '/public/style.css');
+app.get('/259Style.css', (req, res) => {
+    res.sendFile(__dirname + '/public/259Style.css');
+});
+
+app.get('/260Style.css', (req, res) => {
+    res.sendFile(__dirname + '/public/260Style.css');
+});
+
+app.get('/homeStyle.css', (req, res) => {
+    res.sendFile(__dirname + '/public/homeStyle.css');
 });
 
 app.get('/api/pc', async (req, res) => {
@@ -103,6 +112,17 @@ app.get('/api/room259-usageTime', async (req, res) => {
     try{
         const [rows] = await db.query(
             'SELECT HOUR(sessionlogin) AS hour, COUNT(*) AS sessions FROM room259 GROUP BY HOUR(sessionlogin) ORDER BY hour');
+            res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({error: 'Database error'});
+    }
+});
+
+app.get('/api/notificationTable', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            'SELECT * FROM notificationTable');
             res.json(rows);
     } catch (err) {
         console.error(err);
