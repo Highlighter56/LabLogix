@@ -28,7 +28,7 @@ If it is empty, go to step 3.
 
 Else, go to Step 4
 
-### 3. Open your VS Code, find the .env file and paste this, but change it to your password 
+### 3. Open your VS Code, find the .env file and paste this, but change it to your password (To avoid any just-in case issues, make sure the .env file is in root)
 
 If you already have this, skip it
 
