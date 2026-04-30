@@ -6,6 +6,7 @@ truncate table printer;
 truncate table printer3d;
 truncate table room260;
 truncate table room259;
+truncate table notification;
 
 -- set foreign_keys_checks = 1;
 
