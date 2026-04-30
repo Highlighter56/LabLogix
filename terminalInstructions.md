@@ -1,5 +1,7 @@
 # Instructions for how to run the terminal
-Step by step instructions for how to run the terminal
+Step by step instructions for how to run the terminal. If you've already done this before, you would only need to run this line 
+
+    ./scripts/run-terminal.sh
 
 ## To do list 
 
@@ -18,7 +20,7 @@ Run "ls" again, and make sure you see lib, src, scripts, website.
 
     touch .env
 
-If nothing shows up, this is normal, and fine. Run this line to confirm the contents
+If nothing shows up, this is normal, and fine. Run this line to confirm the contents (i changed it so that it should be able to find it from anywhere)
 
     cat .env 
 
