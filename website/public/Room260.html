@@ -11,7 +11,6 @@
 
     <div class="room260-header">
         <h1>LabLogix</h1>
-        <img src="../images/room260.jpeg" alt="room260 background">
     </div>
 
     <div class="form-box">
@@ -242,6 +241,57 @@
                 loadRoom260Summary();
                 loadRoom260Devices();
                 usageTime260();
+            </script>
+
+            <script>
+                const Notifications = {
+                1: "Room is at full capacity",
+                2: "Room is no longer full - spots are available",
+                3: "The room is closed.",
+                4: "The room is open."
+                };
+
+                async function loadNotifications() {
+                    try {
+                        const res = await fetch('/api/notificationTable');
+                        const data = await res.json();
+
+                        const banner = document.getElementById('notification-banner');
+                        const text = document.getElementById('notification-text');
+
+                        const active = data.filter(n => n.status == 1 || n.status === true);
+
+                        if (active.length === 0) {
+                            banner.style.display = 'none';
+                            return;
+                        }
+
+                        const topNofif = active.sort((a, b) => a.notificationID - b.notificationID)[0];
+
+                        const colors = {
+                            1: { bg: '#FCEBEB', border: '#F09595', color: '#A32D2D' },
+                            2: { bg: '#EAF3DE', border: '#97C459', color: '#3B6D11' },
+                            3: { bg: '#F1EFE8', border: '#B4B2A9', color: '#5F5E5A' },
+                            4: { bg: '#E6F1FB', border: '#85B7EB', color: '#185FA5'}
+                        };
+
+                        const c = colors[topNotif.notificationID];
+                        if(c) {
+                            banner.style.background = c.bg;
+                            banner.style.borderBottom = `1px solid ${c.border}`;
+                            banner.style.color = c.color;
+                        }
+
+                        text.textContent = Notifications[topNotif.notificationID] || "Notice: Please check with staff.";
+                        banner.style.display = 'block';
+
+                    }  catch (err) {
+                            console.error('Failed to load notifications: ', err);
+                        }
+                }
+
+                loadNotifications();
+                setInterval(loadNotifications, 30000);
             </script>
         </form>
     </div>

@@ -4,7 +4,6 @@
     padding: 0;
 }
 
-/* Top bar: logo + nav together */
 .top-bar {
     display: flex;
     align-items: center;
@@ -25,11 +24,10 @@ nav a {
     color: rgb(50, 93, 150);
 }
 
-/* Main content area: title + description on left, image on right */
 .main-content {
     display: flex;
     align-items: flex-start;
-    padding: 40px 24px 100px 24px; /* bottom padding clears the footer */
+    padding: 40px 24px 100px 24px;
     gap: 40px;
 }
 
@@ -51,7 +49,6 @@ h1 {
     max-width: 600px;
 }
 
-/* Room images on the right */
 .roomImages {
     flex-shrink: 0;
     display: flex;
@@ -73,7 +70,6 @@ h1 {
     display: block;
 }
 
-/* Footer stays fixed at bottom */
 footer {
     position: fixed;
     background-color: lightsalmon;

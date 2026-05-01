@@ -2,21 +2,40 @@ body {
     font-family: 'Courier New', Courier, monospace;
     margin: 0;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    
+    background-image: url("../images/room260.jpeg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.3;
+    z-index: -1;
 }
 
 .room260-header {
     position: relative;
+    width: 100%;
+    height: 500px;
     overflow: hidden;
 }
 
 .room260-header h1 {
     position: absolute;
+    top: 25%;
     left: 50%;
-    top: 10%;
     transform: translate(-50%, -50%);
-    margin: 0;
-    z-index: 10;
+    z-index: 2;
     font-size: 60px;
+    color: black;
 }
 
 h2 {
@@ -25,21 +44,17 @@ h2 {
 }
 
 .form-box {
+    position: relative;
+    margin: -200px auto 80px;
+    max-width: 1000px;
+    width: 90%;
+    min-height: 800px;
+    padding: 20px;
     border: 10px solid #2a2a2a;
     border-radius: 20px;
-    padding: 20px;
-    width: 1000px;
-    height: 800px;
-    margin: 0 auto;
-    background-color: #1f2c81f7;
-    position: absolute;
-    z-index: 10;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.892);
-    top: 50%;
-    left: 50%;
-    color: antiquewhite;
-    font-family: 'Courier New', Courier, monospace;
-    transform: translate(-50%, -50%);
+    background-color: #1f2c81;
+    z-index: 3;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.9);
 }
 
 .form-box::after {
@@ -47,7 +62,7 @@ h2 {
     display: block;
     width: 200px;
     height: 20px;
-    background-color: #2a2a2a;
+    background-color: #1a1a1a;
     position: absolute;
     bottom: -32px;
     left: 50%;
@@ -92,15 +107,6 @@ h2 {
 
 .buttons button:hover {
     background-color: rgb(185, 196, 217);
-}
-
-.room260-header img {
-    opacity: 0.3;
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    object-position: center;
 }
 
 .columns {
