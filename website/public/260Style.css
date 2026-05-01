@@ -4,12 +4,19 @@ body {
     padding: 0;
 }
 
-h1 {
-    text-align: center;
+.room260-header {
     position: relative;
-    z-index: 10;
+    overflow: hidden;
+}
+
+.room260-header h1 {
+    position: absolute;
+    left: 50%;
+    top: 10%;
+    transform: translate(-50%, -50%);
     margin: 0;
-    padding: 0;
+    z-index: 10;
+    font-size: 60px;
 }
 
 h2 {
@@ -28,10 +35,11 @@ h2 {
     position: absolute;
     z-index: 10;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.892);
-    top: 20%;
-    left: 19%;
+    top: 50%;
+    left: 50%;
     color: antiquewhite;
     font-family: 'Courier New', Courier, monospace;
+    transform: translate(-50%, -50%);
 }
 
 .form-box::after {
@@ -79,20 +87,20 @@ h2 {
 }
 
 .buttons button:last-child {
-    border-right: end;
+    border-right: none;
 }
 
 .buttons button:hover {
     background-color: rgb(185, 196, 217);
 }
 
-img {
+.room260-header img {
     opacity: 0.3;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    align-content: center;
     width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center;
 }
 
 .columns {
@@ -115,5 +123,6 @@ img {
 .chart-wrapper {
     color: rgb(255, 255, 255);
     height: 400px;
-    width: 800px;
+    width: 100%;
+    max-width: 800px;
 }
