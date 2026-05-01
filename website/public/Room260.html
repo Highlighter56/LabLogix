@@ -31,38 +31,13 @@
                 <div class="left-column">
 
                     <!--Displays the status of room260-->
-                    <div id="room260-status">
-                        <script>
-                            async function statusRoom260(){
-                                const response = await fetch('/api/room260');
-                                const data = await response.json();
-
-                                const container = document.getElementById('room260-status');
-
-                                data.forEach(room => {
-                                    container.innerText = `Room Status: ${room.status}`;
-                                });
-                            }
-                            statusRoom260();
-                        </script>
-                    </div>
+                    <div id="room260-status">Room Status: Loading...</div>
 
                     <!--Displays current occupancy of room260-->
-                    <div id="room260-occupancy">
-                        <script>
-                            async function occupancyRoom260() {
-                                const response = await fetch('/api/room260');
-                                const data = await response.json();
+                    <div id="room260-occupancy">Occupancy: Loading...</div>
 
-                                const container = document.getElementById('room260-occupancy');
-
-                                data.forEach(room => {
-                                    container.innerText = `Occupancy: ${room.currentOccupancy} / ${room.capacity}`;
-                                });
-                            }
-                            occupancyRoom260();
-                        </script>
-                    </div>
+                    <!--Displays notification-driven room alerts-->
+                    <div id="room260-alerts">Room Alerts: Loading...</div>
                 </div>
 
                 <!--Right column-->
@@ -70,35 +45,6 @@
                     <!--Displays which and how many devices are in use in room260-->
                     <h3>Devices in use:</h3>
                     <ul id="room260-devices"></ul>
-                    <script>
-                        async function pcRoom260(){
-                            const response = await fetch('/api/pc');
-                            const data = await response.json();
-
-                            const container = document.getElementById('room260-devices');
-
-                            data.forEach(pc => {
-                                const li = document.createElement('li');
-                                li.textContent = `PC: ${pc.status}`;
-                                container.appendChild(li);
-                            });
-                        }
-                        pcRoom260();
-
-                        async function printer3dRoom260() {
-                            const response = await fetch('/api/printer3d');
-                            const data = await response.json();
-
-                            const container = document.getElementById('room260-devices');
-
-                            data.forEach(printer3d => {
-                                const li = document.createElement('li');
-                                li.textContent = `3D-Printer: ${printer3d.status}`;
-                                container.appendChild(li);
-                            });
-                        }
-                        printer3dRoom260();
-                    </script>
                 </div>
 
             </div>
@@ -111,8 +57,85 @@
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
             <script>
+                function notificationStatusToLabel(notificationRows, fallbackRoomStatus) {
+                    const activeIds = new Set(
+                        (notificationRows || [])
+                            .filter(row => Number(row.status) === 1 || row.status === true)
+                            .map(row => Number(row.notificationID))
+                    );
+
+                    if (activeIds.has(1)) return 'closed';
+                    if (activeIds.has(3)) return 'full';
+                    if (activeIds.has(2) || activeIds.has(4)) return 'open';
+                    return fallbackRoomStatus || 'unknown';
+                }
+
+                async function loadRoom260Summary() {
+                    try {
+                        const [roomResponse, notificationsResponse] = await Promise.all([
+                            fetch('/api/room260-current'),
+                            fetch('/api/notificationTable')
+                        ]);
+
+                        const room = await roomResponse.json();
+                        const notifications = await notificationsResponse.json();
+
+                        const roomStatus = notificationStatusToLabel(notifications, room?.status);
+                        const statusContainer = document.getElementById('room260-status');
+                        const occupancyContainer = document.getElementById('room260-occupancy');
+                        const alertsContainer = document.getElementById('room260-alerts');
+
+                        statusContainer.innerText = `Room Status: ${roomStatus}`;
+
+                        if (room) {
+                            occupancyContainer.innerText = `Occupancy: ${room.currentOccupancy} / ${room.capacity}`;
+                        } else {
+                            occupancyContainer.innerText = 'Occupancy: No room data';
+                        }
+
+                        const notificationLabels = {
+                            1: 'Room Closed (8:00 PM)',
+                            2: 'Room Open (8:00 AM)',
+                            3: 'Room Capacity Reached (30)',
+                            4: 'Spot Opened (29)'
+                        };
+
+                        const activeAlerts = (notifications || [])
+                            .filter(row => Number(row.status) === 1 || row.status === true)
+                            .map(row => notificationLabels[Number(row.notificationID)] || `Notification ${row.notificationID}`);
+
+                        alertsContainer.innerText = activeAlerts.length
+                            ? `Room Alerts: ${activeAlerts.join(' | ')}`
+                            : 'Room Alerts: None active';
+                    } catch (err) {
+                        console.error(err);
+                        document.getElementById('room260-status').innerText = 'Room Status: Unavailable';
+                        document.getElementById('room260-occupancy').innerText = 'Occupancy: Unavailable';
+                        document.getElementById('room260-alerts').innerText = 'Room Alerts: Unavailable';
+                    }
+                }
+
+                async function loadRoom260Devices() {
+                    try {
+                        const response = await fetch('/api/room260-devices');
+                        const data = await response.json();
+                        const container = document.getElementById('room260-devices');
+                        container.innerHTML = '';
+                        container.style.columnCount = '2';
+                        container.style.columnGap = '20px';
+
+                        data.forEach(device => {
+                            const li = document.createElement('li');
+                            li.textContent = `${device.deviceType} ${device.deviceId}: ${device.status}`;
+                            container.appendChild(li);
+                        });
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+
                 async function usageTime260() {
-                    const response = await fetch('/api/room260');
+                    const response = await fetch('/api/room260-usageTime');
                     const data = await response.json();
 
                     const hours = data.map(row => `${row.hour}:00`);
@@ -174,6 +197,8 @@
                         }
                     });
                 }
+                loadRoom260Summary();
+                loadRoom260Devices();
                 usageTime260();
             </script>
         </form>

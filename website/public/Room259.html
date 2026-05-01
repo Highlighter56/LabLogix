@@ -31,38 +31,13 @@
                 <div id="left-column">
 
                     <!--Displays the status of room259-->
-                    <div id="room259-status">
-                        <script>
-                            async function statusRoom259(){
-                                const response = await fetch('/api/room259');
-                                const data = await response.json();
-        
-                                const container = document.getElementById('room259-status');
-        
-                                data.forEach(room => {
-                                    container.innerText = `Room Status: ${room.status}`;
-                                });
-                            }
-                            statusRoom259();
-                        </script>
-                    </div>
+                    <div id="room259-status">Room Status: Loading...</div>
 
                     <!--Displays the current occupancy of room259-->
-                    <div id="room259-occupancy">
-                        <script>
-                            async function occupancyRoom259() {
-                                const response = await fetch('/api/room259');
-                                const data = await response.json();
-        
-                                const container = document.getElementById('room259-occupancy');
-        
-                                data.forEach(room => {
-                                    container.innerText = `Occupancy: ${room.currentOccupancy} / ${room.capacity}`;
-                                });
-                            }
-                            occupancyRoom259();
-                        </script>
-                    </div>
+                    <div id="room259-occupancy">Occupancy: Loading...</div>
+
+                    <!--Displays notification-driven room alerts-->
+                    <div id="room259-alerts">Room Alerts: Loading...</div>
                 </div>
 
                 <!--Right column-->
@@ -70,35 +45,6 @@
                     <!--Displays which and how many devices are in use in room259-->
                     <h3>Devices in use:</h3>
                     <ul id="room259-devices"></ul>
-                    <script>
-                        async function pcRoom259(){
-                            const response = await fetch('/api/pc');
-                            const data = await response.json();
-        
-                            const container = document.getElementById('room259-devices');
-        
-                            data.forEach(pc => {
-                                const li = document.createElement('li');
-                                li.textContent = `PC: ${pc.status}`;
-                                container.appendChild(li);
-                            });
-                        }
-                        pcRoom259();
-        
-                        async function printerRoom259() {
-                            const response = await fetch('/api/printer');
-                            const data = await response.json();
-        
-                            const container = document.getElementById('room259-devices');
-        
-                            data.forEach(printer3d => {
-                                const li = document.createElement('li');
-                                li.textContent = `Printer: ${printer.status}`;
-                                container.appendChild(li);
-                            });
-                        }
-                        printerRoom259();
-                    </script>
                 </div>
             </div>
 
@@ -110,8 +56,85 @@
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
             <script>
+                function notificationStatusToLabel(notificationRows, fallbackRoomStatus) {
+                    const activeIds = new Set(
+                        (notificationRows || [])
+                            .filter(row => Number(row.status) === 1 || row.status === true)
+                            .map(row => Number(row.notificationID))
+                    );
+
+                    if (activeIds.has(1)) return 'closed';
+                    if (activeIds.has(3)) return 'full';
+                    if (activeIds.has(2) || activeIds.has(4)) return 'open';
+                    return fallbackRoomStatus || 'unknown';
+                }
+
+                async function loadRoom259Summary() {
+                    try {
+                        const [roomResponse, notificationsResponse] = await Promise.all([
+                            fetch('/api/room259-current'),
+                            fetch('/api/notificationTable')
+                        ]);
+
+                        const room = await roomResponse.json();
+                        const notifications = await notificationsResponse.json();
+
+                        const roomStatus = notificationStatusToLabel(notifications, room?.status);
+                        const statusContainer = document.getElementById('room259-status');
+                        const occupancyContainer = document.getElementById('room259-occupancy');
+                        const alertsContainer = document.getElementById('room259-alerts');
+
+                        statusContainer.innerText = `Room Status: ${roomStatus}`;
+
+                        if (room) {
+                            occupancyContainer.innerText = `Occupancy: ${room.currentOccupancy} / ${room.capacity}`;
+                        } else {
+                            occupancyContainer.innerText = 'Occupancy: No room data';
+                        }
+
+                        const notificationLabels = {
+                            1: 'Room Closed (8:00 PM)',
+                            2: 'Room Open (8:00 AM)',
+                            3: 'Room Capacity Reached (30)',
+                            4: 'Spot Opened (29)'
+                        };
+
+                        const activeAlerts = (notifications || [])
+                            .filter(row => Number(row.status) === 1 || row.status === true)
+                            .map(row => notificationLabels[Number(row.notificationID)] || `Notification ${row.notificationID}`);
+
+                        alertsContainer.innerText = activeAlerts.length
+                            ? `Room Alerts: ${activeAlerts.join(' | ')}`
+                            : 'Room Alerts: None active';
+                    } catch (err) {
+                        console.error(err);
+                        document.getElementById('room259-status').innerText = 'Room Status: Unavailable';
+                        document.getElementById('room259-occupancy').innerText = 'Occupancy: Unavailable';
+                        document.getElementById('room259-alerts').innerText = 'Room Alerts: Unavailable';
+                    }
+                }
+
+                async function loadRoom259Devices() {
+                    try {
+                        const response = await fetch('/api/room259-devices');
+                        const data = await response.json();
+                        const container = document.getElementById('room259-devices');
+                        container.innerHTML = '';
+                        container.style.columnCount = '2';
+                        container.style.columnGap = '20px';
+
+                        data.forEach(device => {
+                            const li = document.createElement('li');
+                            li.textContent = `${device.deviceType} ${device.deviceId}: ${device.status}`;
+                            container.appendChild(li);
+                        });
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+
                 async function usageTime259() {
-                    const response = await fetch('/api/room259');
+                    const response = await fetch('/api/room259-usageTime');
                     const data = await response.json();
 
                     const hours = data.map(row => `${row.hour}:00`);
@@ -134,7 +157,7 @@
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRation: false,
+                            maintainAspectRatio: false,
                             plugins: {
                                 legend: {
                                     labels: {
@@ -173,6 +196,8 @@
                         }
                     });
                 }
+                loadRoom259Summary();
+                loadRoom259Devices();
                 usageTime259();
             </script>
         </form>

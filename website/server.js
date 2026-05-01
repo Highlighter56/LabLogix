@@ -87,6 +87,58 @@ app.get('/api/room260', async (req, res) => {
     }
 });
 
+app.get('/api/room259-current', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            'SELECT * FROM room259 ORDER BY sessionlogin DESC, room259ID DESC LIMIT 1'
+        );
+        res.json(rows[0] || null);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+app.get('/api/room260-current', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            'SELECT * FROM room260 ORDER BY sessionlogin DESC, room260ID DESC LIMIT 1'
+        );
+        res.json(rows[0] || null);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+app.get('/api/room259-devices', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT 'PC' AS deviceType, pcID AS deviceId, status FROM pc WHERE room259ID IS NOT NULL " +
+            "UNION ALL " +
+            "SELECT 'Printer' AS deviceType, printerID AS deviceId, status FROM printer"
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+app.get('/api/room260-devices', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT 'PC' AS deviceType, pcID AS deviceId, status FROM pc WHERE room260ID IS NOT NULL " +
+            "UNION ALL " +
+            "SELECT '3D Printer' AS deviceType, printer3dID AS deviceId, status FROM printer3d"
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
 app.get('/api/users', async (req, res) => {
     try{
         const [rows] = await db.query('SELECT * FROM users');
@@ -121,9 +173,13 @@ app.get('/api/room259-usageTime', async (req, res) => {
 
 app.get('/api/notificationTable', async (req, res) => {
     try {
-        const [rows] = await db.query(
-            'SELECT * FROM notificationTable');
-            res.json(rows);
+        let rows;
+        try {
+            [rows] = await db.query('SELECT notificationID, status FROM notification');
+        } catch (primaryErr) {
+            [rows] = await db.query('SELECT notificationID, status FROM notificationTable');
+        }
+        res.json(rows);
     } catch (err) {
         console.error(err);
         res.status(500).json({error: 'Database error'});
