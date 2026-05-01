@@ -17,9 +17,9 @@
 
         <form>
             <div class="buttons">
-                <button type="button" onclick="window.location.href='/room260'">Room 260</button>
-                <button type="button" onclick="window.location.href='/room259'">Room 259</button>
                 <button type="button" onclick="window.location.href='/home'">Home</button>
+                <button type="button" onclick="window.location.href='/room259'">Room 259</button>
+                <button type="button" onclick="window.location.href='/room260'">Room 260</button>
             </div>
 
             <h2>Room260</h2>
@@ -70,6 +70,20 @@
                     return fallbackRoomStatus || 'unknown';
                 }
 
+                function formatHourLabel(hour24) {
+                    const h = Number(hour24);
+                    const hour12 = h % 12 || 12;
+                    const suffix = h >= 12 ? 'PM' : 'AM';
+                    return `${hour12}:00 ${suffix}`;
+                }
+
+                function getRoomOpenStatusByTime() {
+                    const now = new Date();
+                    const hour = now.getHours();
+                    // Room open 8am (8) to 8pm (20), closed otherwise
+                    return hour >= 8 && hour < 20 ? 'open' : 'closed';
+                }
+
                 async function loadRoom260Summary() {
                     try {
                         const [roomResponse, notificationsResponse] = await Promise.all([
@@ -80,7 +94,18 @@
                         const room = await roomResponse.json();
                         const notifications = await notificationsResponse.json();
 
-                        const roomStatus = notificationStatusToLabel(notifications, room?.status);
+                        // Primary: use time-based open/closed logic
+                        let roomStatus = getRoomOpenStatusByTime();
+                        
+                        // Secondary: check if capacity is full (overrides to 'full' if so)
+                        const activeIds = new Set(
+                            (notifications || [])
+                                .filter(row => Number(row.status) === 1 || row.status === true)
+                                .map(row => Number(row.notificationID))
+                        );
+                        if (activeIds.has(3)) {
+                            roomStatus = 'full';
+                        }
                         const statusContainer = document.getElementById('room260-status');
                         const occupancyContainer = document.getElementById('room260-occupancy');
                         const alertsContainer = document.getElementById('room260-alerts');
@@ -122,11 +147,16 @@
                         const container = document.getElementById('room260-devices');
                         container.innerHTML = '';
                         container.style.columnCount = '2';
-                        container.style.columnGap = '20px';
+                        container.style.columnGap = '24px';
+                        container.style.paddingLeft = '20px';
 
                         data.forEach(device => {
                             const li = document.createElement('li');
-                            li.textContent = `${device.deviceType} ${device.deviceId}: ${device.status}`;
+                            li.style.breakInside = 'avoid';
+                            li.style.whiteSpace = 'nowrap';
+                            li.style.marginBottom = '8px';
+                            const statusLabel = String(device.status).replace('_', ' ');
+                            li.textContent = `${device.deviceType} ${device.deviceId}: ${statusLabel}`;
                             container.appendChild(li);
                         });
                     } catch (err) {
@@ -138,7 +168,7 @@
                     const response = await fetch('/api/room260-usageTime');
                     const data = await response.json();
 
-                    const hours = data.map(row => `${row.hour}:00`);
+                    const hours = data.map(row => formatHourLabel(row.hour));
                     const sessions = data.map(row => row.sessions);
 
                     const ctx = document.getElementById('usageTimeChart').getContext('2d');
@@ -147,7 +177,7 @@
                         data: {
                             labels: hours,
                             datasets: [{
-                                label: 'Sessions per Hour',
+                                label: 'Session Count per Hour',
                                 data: sessions,
                                 backgroundColor: sessions.map(s =>
                                     s > 20 ? '#ef4444' :  // busy: red
@@ -177,6 +207,11 @@
                             },
                             scales: {
                                 x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Time of Day',
+                                        color: '#FFFFFF'
+                                    },
                                     ticks: {
                                         color: '#FFFFFF'
                                     },
@@ -185,9 +220,15 @@
                                     }
                                 },
                                 y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Session Count',
+                                        color: '#FFFFFF'
+                                    },
                                     beginAtZero: true,
                                     ticks: {
-                                        color: '#FFFFFF'
+                                        color: '#FFFFFF',
+                                        precision: 0
                                     },
                                     grid: {
                                         color: 'rgba(255, 255, 255, 0.2)'
