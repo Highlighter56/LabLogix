@@ -1,13 +1,12 @@
--- set foreign_key_checks = 0;
+set foreign_key_checks = 0;
 
+truncate table users;
 truncate table pc;
 truncate table printer;
 truncate table printer3d;
-
 truncate table room260;
 truncate table room259;
-
-truncate table users;
+truncate table notification;
 
 -- set foreign_keys_checks = 1;
 

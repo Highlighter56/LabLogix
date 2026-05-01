@@ -1,29 +1,16 @@
 .homePage {
     background-color: rgb(250, 249, 225);
+    margin: 0;
+    padding: 0;
 }
 
-h1 {
-    font-family: monospace;
-    position: fixed;
-    top: 30%;
-    left: 20px;
-    transform: translateY(-50%);
-    z-index: 100;
-    font-size: 100px;
-    color: rgb(50, 93, 150);
-}
-
-nav {
-    position: fixed;
-    top: 12%;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-nav a {
-    text-decoration: none;
-    font-size: 25px;
-    margin: 0 15px;
+/* Top bar: logo + nav together */
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid #ddd;
 }
 
 .logo {
@@ -31,6 +18,62 @@ nav a {
     height: 80px;
 }
 
+nav a {
+    text-decoration: none;
+    font-size: 25px;
+    margin: 0 15px;
+    color: rgb(50, 93, 150);
+}
+
+/* Main content area: title + description on left, image on right */
+.main-content {
+    display: flex;
+    align-items: flex-start;
+    padding: 40px 24px 100px 24px; /* bottom padding clears the footer */
+    gap: 40px;
+}
+
+.left-col {
+    flex: 1;
+}
+
+h1 {
+    font-family: monospace;
+    font-size: 80px;
+    color: rgb(50, 93, 150);
+    margin: 0 0 24px 0;
+}
+
+.description {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 600px;
+}
+
+/* Room images on the right */
+.roomImages {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 20px;
+}
+
+.clickable-img {
+    display: none;
+    width: 500px;
+    height: 350px;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 60px;
+}
+
+.clickable-img.active {
+    display: block;
+}
+
+/* Footer stays fixed at bottom */
 footer {
     position: fixed;
     background-color: lightsalmon;
@@ -39,36 +82,4 @@ footer {
     bottom: 0;
     width: 100%;
     text-align: center;
-}
-
-.description {
-    font-family: 'Times New Roman', Times, serif;
-    position: fixed;
-    top: 40%;
-    left: 25px;
-    width: 40%;
-    max-width: 1500px;
-    font-family: 30px;
-}
-
-.roomImages {
-    position: fixed;
-    left: 80%;
-    top: 45%;
-    transform: translate(-50%, -50%);
-}
-
-.clickable-img {
-    display: none;
-    width: 50%;
-    height: 50%;
-    object-fit: cover;
-    cursor: pointer;
-}
-
-.clickable-img.active {
-    display: block;
-    width: 600px;
-    height: 400px;
-    border-radius: 100px;
 }

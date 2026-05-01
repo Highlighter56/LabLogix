@@ -1,4 +1,4 @@
-# Database Instructions for first-time users
+# Database Instructions
 There are several MySQL Files created for the database 
 
 ## Run the MySQL Files in this order:
@@ -10,13 +10,13 @@ There are several MySQL Files created for the database
 
     Automatically adding current timestamps for each session login times 
 
-3. 
+3. [notificationTable](notificationTable.sql)
 
-4. 
+    creates a notification table, and inserts blank/empty data
 
-5. 
+4. [adduserIDColumn](adduserIDColumn.sql)
 
-6. 
+    adding "userID" column to each of the device types so that we can track it on login
 
 ## Additional Files and their purposes
 
@@ -25,3 +25,5 @@ There are several MySQL Files created for the database
 [testData](testData.sql): test data created for 
 
 [clearTables](clearTables.sql): clears test data from each table (so that when new data is added to *testData*, there's no conflicts)
+
+[deviceAvailabilityQueries](deviceAvailabilityQueries.sql): queries listing the device status' across 2 rooms
